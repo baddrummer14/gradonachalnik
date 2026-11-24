@@ -3,7 +3,7 @@
 const BASE_NAMES={hort:"Хорт",vedana:"Ведана",miron:"Мирон",gost:"Гостомысл"};
 const AI = {
   // Два прокси: Cloudflare и Vercel. Пробуем по очереди, запоминаем тот, что ответил.
-  PROXIES: ["https://gradonachalnik.baddrummer14.workers.dev", "https://gradonachalnik.vercel.app/api/judge"],
+  PROXIES: ["https://gradonachalnik.vercel.app/api/judge", "https://gradonachalnik.baddrummer14.workers.dev"],
   get PROXY_URL(){ return this.PROXIES[0]; },
   TIMEOUT_MS: 30000,
 
