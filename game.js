@@ -132,6 +132,7 @@ function apply(res){
   ["choices","own","hint"].forEach(id=>$(id).classList.add("hidden"));
   render(ch);
   if(checkDeath()) return;
+  if(res.removed){ return exile(res.removed, true).then(()=>{ $("nextBtn").classList.remove("hidden"); setBusy(false); }); }
   $("nextBtn").classList.remove("hidden"); setBusy(false);
 }
 
@@ -264,9 +265,9 @@ function askExile(k){
   overlay(`<h2>Прогнать ${a.name}?</h2><p>${a.name} (${a.role}) уйдёт из совета. Его сторонники обидятся: Довольство −4. На его место придёт новый человек со своими целями. А изгнанный может вернуться и отомстить.</p>
   <button onclick="closeOv();exile('${k}')">Прогнать</button> <button onclick="closeOv()">Оставить</button>`);
 }
-async function exile(k){
+async function exile(k, byDecision){
   setBusy(true); const old={...ADVISORS[k]};
-  say("you",`${old.name}, ты больше не в совете.`);
+  if(!byDecision) say("you",`${old.name}, ты больше не в совете.`);
   line("banter","Совет затих. Ищут, кого позвать на освободившееся место…");
   let n=await AI.newAdvisor(aiState(), old.name, old.role);
   if(!n){ const used=Object.values(ADVISORS).map(a=>a.name); n={...SPARE_ADVISORS.find(s=>!used.includes(s.name))||SPARE_ADVISORS[0], hello:"Служу тебе, но и о себе не забуду."}; }
@@ -281,8 +282,8 @@ async function exile(k){
     choices:[{t:"Вернуть в совет",fx:{trust:-4},rel:{[k]:-2},mem:`вернул изгнанного ${old.name}`},
              {t:"Откупиться",fx:{goods:-8},rel:{},mem:`откупился от ${old.name}`},
              {t:"Изгнать навсегда вместе с людьми",fx:{people:-4,trust:+3},rel:{},mem:`изгнал ${old.name} навсегда`}]};
-  S.pending.push({id, at:S.turn+3+Math.floor(Math.random()*3)});
-  render(ch); setBusy(false);
+  if(!byDecision) S.pending.push({id, at:S.turn+3+Math.floor(Math.random()*3)});
+  render(ch); if(!byDecision) setBusy(false);
 }
 
 // ---------- отряды ----------

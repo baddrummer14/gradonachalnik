@@ -1,8 +1,9 @@
 // ИИ-судья. Запрос идёт на наш прокси (ключ живёт только там).
 // Если прокси не задан или не ответил, работает запасной разбор без ИИ.
 const AI = {
-  // Локально — наш serve.js, в сети — Cloudflare Worker (впишем после развёртывания).
-  PROXY_URL: "https://gradonachalnik.baddrummer14.workers.dev",
+  // Два прокси: Cloudflare и Vercel. Пробуем по очереди, запоминаем тот, что ответил.
+  PROXIES: ["https://gradonachalnik.baddrummer14.workers.dev", "https://gradonachalnik.vercel.app/api/judge"],
+  get PROXY_URL(){ return this.PROXIES[0]; },
   TIMEOUT_MS: 30000,
 
   buildPrompt(state, ev, text){
@@ -21,40 +22,39 @@ ${this.popLine(state)}
 Ответь ТОЛЬКО JSON:
 {"possible":true,"fx":{"food":0,"goods":0,"mood":0,"trust":0,"people":0},"rel":{"hort":0,"vedana":0,"miron":0,"gost":0},
 "lines":[{"who":"hort|vedana|miron|gost","text":"реплика 1-2 предложения"}],
-"narration":"что произошло, 1-2 предложения, живо, без пафоса","mem":"кратко, что решил вождь (до 8 слов)"}`;
+"narration":"что произошло, 1-2 предложения, живо, без пафоса","mem":"кратко, что решил вождь (до 8 слов)",
+"removed":""}
+Если решение вождя убирает советника из совета (казнь, изгнание, смерть, уход), впиши его ключ в "removed" (hort|vedana|miron|gost), иначе оставь пустым.`;
   },
 
   async judge(state, ev, text){
     this.lastError = "";
-    if(this.PROXY_URL){
-      try{
-        const ctl = new AbortController();
-        const t = setTimeout(()=>ctl.abort(), this.TIMEOUT_MS);
-        const r = await fetch(this.PROXY_URL,{method:"POST",signal:ctl.signal,
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({prompt:this.buildPrompt(state,ev,text)})});
-        clearTimeout(t);
-        const j = await r.json().catch(()=>({}));
-        if(r.ok){
-          const out = this.parse(j.text||"");
-          if(out) return {...out, source:"ai"};
-          this.lastError = "ИИ вернул непонятный ответ: "+String(j.text).slice(0,120);
-        } else this.lastError = `прокси ${r.status}: ${j.error||""}`.slice(0,500);
-      }catch(e){ this.lastError = "нет связи с прокси: "+e.name; }
-      console.warn("ИИ:", this.lastError);
-    }
+    const txt=await this.post(this.buildPrompt(state,ev,text));
+    if(txt){ const out=this.parse(txt); if(out) return {...out, source:"ai"}; this.lastError="непонятный ответ ИИ"; }
+    console.warn("ИИ:", this.lastError);
     return this.offline(ev, text);
+  },
+
+  async post(prompt){
+    let last="";
+    for(let attempt=0; attempt<2; attempt++){
+      for(let i=0;i<this.PROXIES.length;i++){
+        const url=this.PROXIES[i];
+        try{
+          const r=await fetch(url,{method:"POST",signal:AbortSignal.timeout(attempt?20000:12000),headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+          const j=await r.json().catch(()=>({}));
+          if(r.ok&&j.text){ if(i>0){ this.PROXIES.splice(i,1); this.PROXIES.unshift(url); } return j.text; }
+          last=url+": "+r.status+" "+(j.error||"");
+        }catch(e){ last=url+": "+e.name; }
+      }
+    }
+    this.lastError=last; return null;
   },
 
   // Сырой запрос к прокси: вернёт объект из JSON или null.
   async raw(prompt){
-    if(!this.PROXY_URL) return null;
-    try{
-      const r = await fetch(this.PROXY_URL,{method:"POST",signal:AbortSignal.timeout(this.TIMEOUT_MS),
-        headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
-      const j = await r.json(); const m=(j.text||"").match(/\{[\s\S]*\}/);
-      return m ? JSON.parse(m[0]) : null;
-    }catch(e){ return null; }
+    const txt=await this.post(prompt); if(!txt) return null;
+    try{ const m=txt.match(/{[sS]*}/); return m?JSON.parse(m[0]):null; }catch(e){ return null; }
   },
 
   popLine(state){ return state.pop ? `Состав людей: мужчин ${state.pop.men}, женщин ${state.pop.women}, стариков ${state.pop.elders}, детей ${state.pop.kids}. Учитывай, кто реально может исполнить решение (охота и стража — мужчины, дети не работают в полную силу).` : ""; },
@@ -140,7 +140,7 @@ ${a.name} карьерист и просит частной аудиенции: 
       for(const k in STATS) fx[k]=clamp(j.fx?.[k]);
       for(const k in ADVISORS) rel[k]=Math.max(-2,Math.min(2,Math.round(+j.rel?.[k]||0)));
       const lines=(j.lines||[]).filter(l=>ADVISORS[l.who]).slice(0,3);
-      return {fx, rel, lines, narration:String(j.narration||""), mem:String(j.mem||"принял своё решение").slice(0,80)};
+      return {fx, rel, lines, narration:String(j.narration||""), mem:String(j.mem||"принял своё решение").slice(0,80), removed:ADVISORS[j.removed]?j.removed:""};
     }catch(e){ return null; }
   },
 
