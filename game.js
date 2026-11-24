@@ -27,7 +27,7 @@ function applyLabels(){
 }
 function startEra(){
   const era=ERAS[S.eraIdx]; applyLabels(); S.evReady=null; S.evNext=null; S.audNext=null;
-  S.turn=0; S.queue=shuffle(era.events).slice(0,era.turns); S.audTurn=2+Math.floor(Math.random()*2);
+  S.turn=0; { const first=(era.introOrder||[]).map(id=>era.events.find(e=>e.id===id)).filter(Boolean); const rest=shuffle(era.events.filter(e=>!first.includes(e))); S.queue=[...first,...rest].slice(0,era.turns); } S.audTurn=2+Math.floor(Math.random()*2);
   $("era").textContent=era.name;
   if(era.bg) $("bg").style.backgroundImage=`url(${era.bg})`;
   overlay(`<h2>${era.name}</h2><p>${era.intro}</p>
@@ -131,6 +131,7 @@ function apply(res){
   if(res.mem) S.memory.push(`ход ${S.turn}: ${res.mem}`);
   if(res.narration) line("nar", res.narration);
   fxLine(ch);
+  if(S.cur?.hist) line("hist", "📜 В истории: "+S.cur.hist);
   ["choices","own","hint"].forEach(id=>$(id).classList.add("hidden"));
   render(ch);
   if(checkDeath()) return;

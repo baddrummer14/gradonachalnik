@@ -85,11 +85,11 @@ ${this.popLine(state)}`; },
   async event(state){
     const j = await this.raw(`${this.ctx(state)}
 Придумай новое событие для племени. Оно должно вырасти из прошлых решений вождя, его законов или обид советников (назови это прямо), и быть про хозяйство, обмен, долги, плату или справедливость — зачатки экономики. По эпохе: денег и металла ещё нет.
-Ответь ТОЛЬКО JSON: {"title":"2-4 слова","who":"hort|vedana|miron|gost","text":"что случилось, 2-3 предложения, живо",
+Ответь ТОЛЬКО JSON: {"title":"2-4 слова","who":"hort|vedana|miron|gost","text":"что случилось, 2-3 предложения, живо","hist":"реальный исторический факт на эту тему, 1-2 предложения, только проверенное (народ, век, событие)",
 "choices":[{"t":"вариант","fx":{"food":0,"goods":0,"mood":0,"trust":0,"people":0},"rel":{"hort":0,"vedana":0,"miron":0,"gost":0},"mem":"до 8 слов"}, ... всего 3 варианта]}
 Эффекты от -8 до +8, у каждого варианта своя цена.`);
     if(!j||!j.title||!Array.isArray(j.choices)||j.choices.length<2) return null;
-    return {title:String(j.title).slice(0,60), who:ADVISORS[j.who]?j.who:"hort", text:String(j.text||"").slice(0,400), source:"ai",
+    return {title:String(j.title).slice(0,60), who:ADVISORS[j.who]?j.who:Object.keys(ADVISORS)[0], text:String(j.text||"").slice(0,400), hist:String(j.hist||"").slice(0,400), source:"ai",
       choices:j.choices.slice(0,3).map(c=>({t:String(c.t).slice(0,90), mem:String(c.mem||c.t).slice(0,80), fx:this.clampFx(c.fx,8), rel:this.clampRel(c.rel)}))};
   },
 
