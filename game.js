@@ -118,7 +118,7 @@ $("own").onsubmit = async e=>{
   await sleep(900);
   while(!done && i<lines.length && i<6){ let [who,t]=lines[i++]; if(who===last&&i<lines.length) [who,t]=lines[i++]; last=who; say(who,t,"banter"); await Promise.race([sleep(3600), p]); }
   const res=await p;
-  if(res.source!=="ai" && AI.lastError) console.warn("[ИИ]", AI.lastError);
+  if(res.source!=="ai" && AI.lastError){ console.warn("[ИИ]", AI.lastError); if(location.search.includes("debug")) line("fx","[отладка] "+AI.lastError); }
   res.lines?.forEach(l=>say(l.who,l.text));
   apply(res);
 };
