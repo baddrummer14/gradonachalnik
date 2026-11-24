@@ -1,0 +1,98 @@
+:root{--bg:#1b1612;--card:#2a221b;--ink:#f1e6d3;--muted:#b9a88f;--gold:#d9a441;--red:#c8553d;--green:#7ea35a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Georgia,"Times New Roman",serif}
+.hidden{display:none!important}
+#app{max-width:1150px;margin:0 auto;padding:12px 16px}
+#top{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:baseline}
+#title b{font-size:22px;color:var(--gold)} #era,#turnInfo{color:var(--muted);margin-left:6px}
+#goal{font-size:14px;color:var(--muted)} #goal b{color:var(--ink)} .ok{color:var(--green)!important}
+#stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0}
+@media(max-width:700px){#stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--card);padding:6px 10px;border-radius:8px;font-size:14px;cursor:help}
+.stat .row{display:flex;justify-content:space-between}
+.stat b{color:var(--gold)} .stat .d{font-size:12px;margin-left:4px}
+.bar{height:6px;background:#14100c;border-radius:3px;margin-top:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gold);transition:width .6s}
+.stat.low .bar i{background:var(--red)} .stat.low{outline:1px solid var(--red)}
+.up{color:var(--green)} .down{color:var(--red)}
+main{display:grid;grid-template-columns:1fr 290px;gap:14px}
+@media(max-width:850px){main{grid-template-columns:1fr}}
+#scene{position:relative;border-radius:10px;overflow:hidden;min-height:420px;background:#3a2d22}
+#bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.4}
+#eventCard{position:relative;margin:16px;background:rgba(27,22,18,.93);padding:16px 18px;border-radius:10px;border:1px solid #5a4835}
+#evKind{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.05em}
+#evKind.aud{color:#e3b5ff}
+#evTitle{margin:4px 0 6px;color:var(--gold)}
+#log{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.line{background:var(--card);padding:7px 11px;border-radius:8px;animation:in .3s}
+.line.say b{color:var(--gold)} .line.you{background:#3b2f22;margin-left:30px} .line.you b{color:var(--ink)}
+.line.nar{font-style:italic;color:#e0d2b8;background:none;border-left:3px solid var(--gold)}
+.line.fx{font-size:14px} .line.tip{background:#24303a;color:#d7e6f0;font-size:14px}
+.line.banter{opacity:.75;font-size:14px}
+@keyframes in{from{opacity:0;transform:translateY(4px)}}
+#choices{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+button{font:inherit;cursor:pointer;background:#4a3a2a;color:var(--ink);border:1px solid #7a6247;border-radius:6px;padding:8px 12px;text-align:left}
+button:hover{background:#5d4932} button:disabled{opacity:.5;cursor:wait}
+#own{display:flex;gap:6px} #own input{flex:1;font:inherit;padding:8px;border-radius:6px;border:1px solid var(--gold);background:#14100c;color:var(--ink)}
+#own button{text-align:center}
+#hint{font-size:13px;color:var(--gold);margin-top:4px}
+#nextBtn{margin-top:10px;width:100%;text-align:center;background:#6b4f2a;border-color:var(--gold)}
+#side h3{margin:4px 0 6px;color:var(--gold);font-size:16px} #units{color:var(--muted);font-size:13px}
+#council{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.adv{display:flex;gap:8px;background:var(--card);border-radius:8px;padding:7px}
+.adv .pic{width:52px;height:52px;border-radius:6px;background:#5a4835;background-size:cover;flex:none;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--gold)}
+.adv .nm{font-weight:bold} .adv .rl{font-size:12px;color:var(--muted)} .adv .mood{font-size:12px}
+.adv.talk{outline:1px solid var(--gold)}
+#jobs{display:flex;flex-direction:column;gap:4px}
+.job{display:grid;grid-template-columns:1fr auto 28px auto 28px;align-items:center;gap:4px;background:var(--card);border-radius:6px;padding:4px 8px;font-size:14px}
+.job small{display:block;color:var(--muted);font-size:11px}
+.job button{padding:0;width:28px;height:28px;text-align:center}
+.job .n{min-width:18px;text-align:center;font-weight:bold}
+#laws{display:flex;flex-direction:column;gap:4px;margin-bottom:4px}
+.law{display:flex;justify-content:space-between;align-items:center;background:#2f2a1c;border-left:3px solid var(--gold);border-radius:6px;padding:4px 8px;font-size:14px}
+.law.empty{color:var(--muted);border-left-color:#5a4835}
+.law button{padding:0 6px;font-size:14px}
+#lawForm{display:flex;gap:4px;margin-bottom:12px} #lawForm input{flex:1;min-width:0;font:inherit;font-size:13px;padding:6px;border-radius:6px;border:1px solid #7a6247;background:#14100c;color:var(--ink)}
+#lawForm button{font-size:13px;padding:6px 8px}
+.chron{font-style:italic;line-height:1.6;border-left:3px solid var(--gold);padding-left:12px}
+#forecast{font-size:13px;color:var(--muted);margin-top:6px;background:var(--card);border-radius:6px;padding:6px 8px}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
+#ovBox{background:var(--card);max-width:640px;width:100%;padding:22px;border-radius:12px;border:1px solid var(--gold);max-height:90vh;overflow:auto}
+#ovBox h2{color:var(--gold);margin-top:0} #ovBox button{margin-top:10px}
+/* экскурсия по интерфейсу */
+.tour-hl{position:relative;z-index:20;box-shadow:0 0 0 4px var(--gold),0 0 0 9999px rgba(0,0,0,.78);border-radius:8px}
+#tourBox{position:fixed;z-index:30;max-width:360px;background:var(--card);border:1px solid var(--gold);border-radius:10px;padding:14px 16px;box-shadow:0 8px 30px #000}
+#tourBox h4{margin:0 0 6px;color:var(--gold)} #tourBox p{margin:0 0 10px;font-size:15px}
+#tourBox .tb{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+.title-screen h1{color:var(--gold);margin:0 0 4px;font-size:34px} .title-screen .sub{color:var(--muted);margin-bottom:14px}
+.title-screen ol{padding-left:20px} .title-screen li{margin:4px 0}
+.adv{position:relative} .adv .exile{position:absolute;top:4px;right:4px;padding:0 6px;font-size:12px;opacity:.35;background:none;border:none}
+.adv:hover .exile{opacity:1}
+#builds{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.bld{display:flex;justify-content:space-between;align-items:center;gap:6px;background:var(--card);border-radius:6px;padding:4px 8px;font-size:14px}
+.bld small{display:block;color:var(--muted);font-size:11px} .bld button{padding:4px 8px;font-size:13px;white-space:nowrap}
+.bld button::after{content:" зап."} .bld.has{border-left:3px solid var(--green)} .bld.has b{color:var(--green)} .bld.old{color:var(--muted);font-size:12px}
+/* картинка сцены — полосой сверху, карточка под ней */
+#scene{min-height:0;background:var(--card)}
+#bg{position:relative;inset:auto;height:230px;opacity:1;border-bottom:1px solid #5a4835}
+#eventCard{margin:-40px 14px 14px;box-shadow:0 -6px 20px rgba(0,0,0,.5)}
+@media(max-width:700px){#bg{height:150px}}
+#pop{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;color:var(--muted);margin-bottom:6px}
+#pop b{color:var(--ink)} #pop i{color:var(--gold);font-style:normal}
+.job.nope{outline:2px solid var(--red)}
+/* картинка эпохи на всю сцену, карточка полупрозрачная поверх нижней части */
+#scene{aspect-ratio:16/9;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;background:#2a221b}
+#bg{position:absolute;inset:0;height:auto;opacity:1;border:none;background-size:cover;background-position:center top}
+#eventCard{margin:clamp(90px,14vw,200px) 14px 14px;background:rgba(20,16,12,.74);backdrop-filter:blur(3px);box-shadow:0 4px 24px rgba(0,0,0,.55)}
+#eventCard .line{background:rgba(42,34,27,.85)} #eventCard .line.nar{background:none} #eventCard .line.you{background:rgba(59,47,34,.9)}
+@media(max-width:700px){#scene{aspect-ratio:auto} #eventCard{margin-top:120px}}
+/* v2: игра помещается в экран — сцена на всю высоту, боковая панель листается сама */
+@media(min-width:851px){
+  main{height:calc(100vh - 128px);min-height:520px}
+  #side{overflow-y:auto;padding-right:4px}
+  #scene{aspect-ratio:auto;height:100%}
+  #eventCard{margin:0 14px 14px;max-height:62%;overflow-y:auto}
+}
+#bg{background-position:center 35%}
+#side::-webkit-scrollbar,#eventCard::-webkit-scrollbar{width:6px} #side::-webkit-scrollbar-thumb,#eventCard::-webkit-scrollbar-thumb{background:#5a4835;border-radius:3px}
+#eventCard .line.tip{background:rgba(36,56,72,.92);color:#e6f1f8}
