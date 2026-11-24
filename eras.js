@@ -2,8 +2,8 @@
 
 // Как называются дела и показатели в каждой эпохе (механика одна, смысл растёт)
 const ERA_LABELS = [
-  {goods:"Запасы", jobs:{hunt:"Охота",gather:"Собирательство",craft:"Ремесло",trade:"Мена с соседями",guard:"Стража"}, leader:"Вождь"},
-  {goods:"Запасы зерна", jobs:{hunt:"Пашня",gather:"Скот и огороды",craft:"Ремесло",trade:"Мена на торжке",guard:"Дозор"}, leader:"Староста"},
+  {goods:"Запасы", jobs:{hunt:"Охота",gather:"Собирательство",craft:"Ремесло",trade:"Обмен с соседями",guard:"Стража"}, leader:"Вождь"},
+  {goods:"Запасы зерна", jobs:{hunt:"Пашня",gather:"Скот и огороды",craft:"Ремесло",trade:"Обмен на торжке",guard:"Дозор"}, leader:"Староста"},
   {goods:"Казна", jobs:{hunt:"Пашня",gather:"Скот",craft:"Мастерские",trade:"Торг",guard:"Дружина"}, leader:"Князь"},
   {goods:"Казна", jobs:{hunt:"Хлеб с округи",gather:"Рыбный промысел",craft:"Цеха",trade:"Купеческие ладьи",guard:"Городская стража"}, leader:"Посадник"},
   {goods:"Казна", jobs:{hunt:"Хлеб с округи",gather:"Промыслы",craft:"Цеха",trade:"Банк и векселя",guard:"Стража"}, leader:"Градоначальник"}
@@ -13,7 +13,7 @@ const ERA_LABELS = [
 const BUILDINGS = [
   [ {id:"cache", name:"Яма-хранилище", cost:12, eff:{food:1}, tip:"+1 еды за ход, меньше гниёт"},
     {id:"shrine", name:"Капище", cost:10, eff:{mood:1}, tip:"+1 довольства за ход"},
-    {id:"ford", name:"Тропа к броду", cost:15, eff:{goods:1}, tip:"+1 запасов за ход, мена легче"} ],
+    {id:"ford", name:"Тропа к броду", cost:15, eff:{goods:1}, tip:"+1 запасов за ход, обмен легче"} ],
   [ {id:"granary", name:"Амбар на сваях", cost:15, eff:{food:2}, tip:"+2 еды за ход"},
     {id:"fence", name:"Частокол", cost:15, eff:{trust:1}, theft:true, tip:"+1 доверия, воры не страшны"},
     {id:"market", name:"Торжок", cost:18, eff:{goods:2}, tip:"+2 запасов за ход"} ],

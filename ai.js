@@ -1,5 +1,6 @@
 // ИИ-судья. Запрос идёт на наш прокси (ключ живёт только там).
 // Если прокси не задан или не ответил, работает запасной разбор без ИИ.
+const BASE_NAMES={hort:"Хорт",vedana:"Ведана",miron:"Мирон",gost:"Гостомысл"};
 const AI = {
   // Два прокси: Cloudflare и Vercel. Пробуем по очереди, запоминаем тот, что ответил.
   PROXIES: ["https://gradonachalnik.baddrummer14.workers.dev", "https://gradonachalnik.vercel.app/api/judge"],
@@ -123,7 +124,7 @@ ${a.name} карьерист и просит частной аудиенции: 
 "choices":[{"t":"согласиться (суть)","fx":{"food":0,"goods":0,"mood":0,"trust":0,"people":0},"rel":{"${who}":2},"mem":"до 8 слов"},
 {"t":"отказать","fx":{...},"rel":{"${who}":-1},"mem":"..."}, {"t":"третий вариант-компромисс","fx":{...},"rel":{...},"mem":"..."}]}
 Эффекты от -8 до +8, сумма плюсов у согласия не больше +10: выгода всегда с ценой (что-то падает).`);
-    if(!j||!j.title||!Array.isArray(j.choices)||!j.choices.length) return {...AUDIENCES[who], who, source:"offline"};
+    if(!j||!j.title||!Array.isArray(j.choices)||!j.choices.length){ if(!AUDIENCES[who]||BASE_NAMES[who]!==a.name) return null; return {...AUDIENCES[who], who, source:"offline"}; }
     const clamp=v=>Math.max(-10,Math.min(10,Math.round(+v||0)));
     return {who, title:String(j.title).slice(0,60), text:String(j.text||"").slice(0,400), source:"ai",
       choices:j.choices.slice(0,3).map(c=>({t:String(c.t).slice(0,90), mem:String(c.mem||c.t).slice(0,80),
