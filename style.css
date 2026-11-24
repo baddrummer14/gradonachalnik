@@ -98,3 +98,7 @@ button:hover{background:#5d4932} button:disabled{opacity:.5;cursor:wait}
 #eventCard .line.tip{background:rgba(36,56,72,.92);color:#e6f1f8}
 .adv .perk{font-size:11px;line-height:1.25}
 #eventCard .line.hist{background:rgba(58,46,24,.92);border-left:3px solid var(--gold);font-size:14px;color:#ecdcb8}
+
+#eventCard .line.wait{background:none;color:#cbb994;font-style:italic;font-size:14px;padding:2px 11px}
+#eventCard .line.thinking{background:none;color:var(--gold);font-size:22px;letter-spacing:4px;padding:0 11px;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.3}}

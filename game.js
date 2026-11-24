@@ -114,9 +114,20 @@ $("own").onsubmit = async e=>{
   setBusy(true); say("you", text);
   const p=AI.judge(aiState(), S.cur, text);
   let done=false; p.then(()=>done=true);
-  const lines=shuffle(Object.entries(ADVISORS).flatMap(([k,a])=>(a.banter||[]).map(t=>[k,t]))); let i=0, last="";
-  await sleep(900);
-  while(!done && i<lines.length && i<6){ let [who,t]=lines[i++]; if(who===last&&i<lines.length) [who,t]=lines[i++]; last=who; say(who,t,"banter"); await Promise.race([sleep(3600), p]); }
+  // сцена исполнения: 1-2 строки обстановки и одна реплика советника в его характере
+  const who=ADVISORS[S.cur?.who]?S.cur.who:Object.keys(ADVISORS)[0];
+  const scene=shuffle(WAIT_SCENES[S.eraIdx]||WAIT_SCENES[0]).map(t=>t.replace("{a}", who?ADVISORS[who].name:"Гонец"));
+  const others=shuffle(Object.keys(ADVISORS).filter(k=>k!==who&&ADVISORS[k].banter));
+  const steps=[["nar",scene[0]]];
+  if(others[0]) steps.push(["say",others[0],ADVISORS[others[0]].banter[Math.floor(Math.random()*ADVISORS[others[0]].banter.length)]]);
+  steps.push(["nar",scene[1]],["nar",scene[2]]);
+  const dots=document.createElement("div"); dots.className="line thinking"; dots.textContent="⋯";
+  await sleep(700);
+  for(const st of steps){ if(done) break;
+    if(st[0]==="nar") line("wait", st[1]); else say(st[1],st[2],"banter");
+    $("log").appendChild(dots);
+    await Promise.race([sleep(4500), p]); }
+  dots.remove();
   const res=await p;
   if(res.source!=="ai" && AI.lastError){ console.warn("[ИИ]", AI.lastError); if(location.search.includes("debug")) line("fx","[отладка] "+AI.lastError); }
   res.lines?.forEach(l=>say(l.who,l.text));
