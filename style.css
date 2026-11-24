@@ -102,3 +102,20 @@ button:hover{background:#5d4932} button:disabled{opacity:.5;cursor:wait}
 #eventCard .line.wait{background:none;color:#cbb994;font-style:italic;font-size:14px;padding:2px 11px}
 #eventCard .line.thinking{background:none;color:var(--gold);font-size:22px;letter-spacing:4px;padding:0 11px;animation:pulse 1.2s infinite}
 @keyframes pulse{50%{opacity:.3}}
+
+#bg video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.toast{position:fixed;left:50%;top:-140px;transform:translateX(-50%);z-index:40;max-width:520px;width:calc(100% - 32px);background:#2a221b;border:1px solid var(--gold);border-radius:12px;padding:12px 16px;box-shadow:0 10px 30px #000a;transition:top .5s cubic-bezier(.2,.9,.3,1.2)}
+.toast.in{top:14px} .toast.ms{border-color:#e9c46a;background:linear-gradient(#3a2e16,#2a221b)} .toast.aud{border-color:#b98be0} .toast.guest{border-color:#e9c46a;box-shadow:0 0 30px #e9c46a55}
+#scene.good::after,#scene.bad::after{content:"";position:absolute;inset:0;pointer-events:none;animation:glow 1.4s ease-out forwards;z-index:3}
+#scene.good::after{box-shadow:inset 0 0 120px #f2c14e} #scene.bad::after{box-shadow:inset 0 0 120px #c8553d}
+@keyframes glow{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+#goal{display:flex;flex-wrap:wrap;gap:6px;align-items:center} .ms{background:#2a221b;border:1px solid #5a4835;border-radius:20px;padding:2px 10px;font-size:13px;color:var(--muted);cursor:help}
+.ms.done{color:#f2d27a;border-color:#e9c46a;box-shadow:0 0 10px #e9c46a55} .left{font-size:13px;color:var(--muted)}
+#evKind.guest,#evKind.msk{color:#f2d27a} #eventCard.guest{border-color:#e9c46a;box-shadow:0 0 24px #e9c46a33} #eventCard.aud{border-color:#b98be0}
+.join{text-align:center} .jpic{width:140px;height:140px;margin:0 auto 10px;border-radius:12px;background-size:cover;background-position:center top;border:2px solid var(--gold)}
+.join .perk{font-size:14px;margin:4px 0} .mslist li{margin:3px 0} .nation{border:1px solid var(--gold);border-radius:10px;padding:10px 14px;margin:10px 0;background:#3a2e16}
+button{transition:background .2s,box-shadow .2s,transform .1s} button:hover:not(:disabled){box-shadow:0 0 12px #d9a44155;transform:translateY(-1px)} button:active:not(:disabled){transform:scale(.98);box-shadow:0 0 18px #d9a44188}
+#ownText:placeholder-shown{animation:invite 2.4s ease-in-out infinite} @keyframes invite{50%{box-shadow:0 0 12px #d9a44166}}
+.stat.low .bar i{animation:alarm 1s infinite} @keyframes alarm{50%{opacity:.45}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+body[data-era=hunters]{--gold:#d9a441} body[data-era=neolithic]{--gold:#c98a55} body[data-era=cities]{--gold:#5b8fd6} body[data-era=coin]{--gold:#d8c58a} body[data-era=trade]{--gold:#c9a063} body[data-era=bank]{--gold:#7fb38a}

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Градоначальникъ</title>
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
 <div id="app">
@@ -34,13 +34,17 @@
     <aside id="side">
       <h3>Совет</h3>
       <div id="council"></div>
+      <div class="lawbox">
       <h3>Законы</h3>
       <div id="laws"></div>
       <form id="lawForm" onsubmit="event.preventDefault();newLaw()">
         <input id="lawText" maxlength="160" autocomplete="off"><button id="lawBtn">Издать</button>
       </form>
+      </div>
+      <div class="buildbox">
       <h3>Постройки</h3>
       <div id="builds"></div>
+      </div>
       <div class="peoplebox">
       <h3>Люди по делам <span id="units"></span></h3>
       <div id="pop"></div>
@@ -51,10 +55,11 @@
   </main>
 </div>
 <div id="overlay" class="hidden"><div id="ovBox"></div></div>
-<script src="data.js?v=18"></script>
-<script src="eras.js?v=18"></script>
-<script src="history.js?v=18"></script>
-<script src="ai.js?v=18"></script>
-<script src="game.js?v=18"></script>
+<script src="data.js?v=20"></script>
+<script src="eras.js?v=20"></script>
+<script src="history.js?v=20"></script>
+<script src="eras2.js?v=20"></script>
+<script src="ai.js?v=20"></script>
+<script src="game.js?v=20"></script>
 </body>
 </html>

@@ -11,11 +11,13 @@ function aiState(){ return {stats:S.stats, rel:S.rel, memory:S.memory, laws:S.la
 
 function newGame(silent){
   for(const k in STATS) S.stats[k]=STATS[k].start;
-  for(const k in JOBS) S.jobs[k]=JOBS[k].start;
-  S.pop={}; for(const k in GROUPS) S.pop[k]=GROUPS[k].start; S.acc={food:0,goods:0};
+  S.stats.food=32; S.stats.goods=10; S.stats.people=18;
+  S.pop={men:5,women:5,elders:3,kids:5}; S.acc={food:0,goods:0};
+  S.jobs={hunt:5,gather:10,craft:0,trade:0,guard:0};
+  S.ms={}; S.traits={war:0,trade:0,law:0,faith:0,nomad:false}; S.open={jobs:["hunt","gather"],laws:false,builds:false};
   S.flags={}; S.memory=[]; S.pending=[]; S.eraIdx=0; S.audNext=null; S.laws=[]; S.lawCd=0; S.evNext=null; S.evReady=null; S.tutorial=true; S.built=[];
   for(const k in ADVISORS) delete ADVISORS[k];
-  for(const k in BASE_ADVISORS) ADVISORS[k]={...BASE_ADVISORS[k], banter:BANTER[k]};
+  ADVISORS.hort={...BASE_ADVISORS.hort, banter:BANTER.hort};
   S.reserve=RESERVE.map(r=>({...r})); S.rel={}; for(const k in ADVISORS) S.rel[k]=0;
   if(silent){ S.cur=ERAS[0].events[0]; $("era").textContent=ERAS[0].name; showEvent("Пример события"); S.cur=null; return; }
   startEra();
@@ -24,29 +26,67 @@ function newGame(silent){
 function applyLabels(){
   const L=ERA_LABELS[S.eraIdx]; STATS.goods.name=L.goods;
   for(const k in JOBS) JOBS[k].name=L.jobs[k];
+  if(S.traits?.nomad && S.eraIdx>=1){ JOBS.hunt.name="Стада"; JOBS.gather.name="Кочевые промыслы"; }
+}
+function unlockByKey(key){
+  const news=[];
+  for(const j in JOB_UNLOCK) if(JOB_UNLOCK[j]===key && !S.open.jobs.includes(j)){ S.open.jobs.push(j); news.push("новое дело: "+JOBS[j].name); }
+  for(const p in PANEL_UNLOCK) if(PANEL_UNLOCK[p]===key && !S.open[p]){ S.open[p]=true; news.push(p==="laws"?"панель «Законы»: пиши законы своими словами":"панель «Постройки»: строй за запасы"); }
+  const joins=Object.keys(JOIN).filter(k=>!ADVISORS[k] && !S.gone?.[k] && (JOIN[k].at===key || (key==="era:"+S.eraIdx && JOIN[k].era===S.eraIdx && JOIN[k].at==="start")));
+  return {news, joins};
+}
+async function showJoins(joins){
+  for(const k of joins){
+    ADVISORS[k]={...BASE_ADVISORS[k], banter:BANTER[k]}; S.rel[k]=0;
+    await new Promise(res=>{ overlay(`<div class="join"><div class="jpic" style="background-image:url(${ADVISORS[k].img})"></div>
+      <h2>В совет ${k==="vedana"?"пришла":"пришёл"} ${ADVISORS[k].name}</h2><p class="rl">${ADVISORS[k].role}</p><p>«${JOIN[k].why}»</p>
+      <p class="perk up">Пока доволен: ${SLOTS[k].good}</p><p class="perk down">Если обидеть: ${SLOTS[k].bad}</p>
+      <button id="joinOk">Принять в совет</button></div>`); $("joinOk").onclick=()=>{ closeOv(); res(); }; });
+  }
+  render();
+}
+function toast(html, cls=""){
+  const t=document.createElement("div"); t.className="toast "+cls; t.innerHTML=html; document.body.appendChild(t);
+  requestAnimationFrame(()=>t.classList.add("in")); setTimeout(()=>{ t.classList.remove("in"); setTimeout(()=>t.remove(),600); }, 4200);
+}
+function glowScene(kind){ const s=$("scene"); s.classList.remove("good","bad"); void s.offsetWidth; s.classList.add(kind); }
+async function markMs(id){
+  if(S.ms[id]) return; const era=ERAS[S.eraIdx], m=era.milestones.find(x=>x[0]===id); if(!m) return;
+  S.ms[id]=true; S.memory.push(`ход ${S.turn}: веха «${m[1]}»`);
+  const u=unlockByKey("ms:"+id);
+  toast(`<b>Веха пройдена: ${m[1]}</b><br><i>Урок правителя:</i> ${m[2]}${u.news.length?"<br>Открыто: "+u.news.join(", "):""}`, "ms");
+  glowScene("good"); render();
+  if(u.joins.length){ await sleep(900); await showJoins(u.joins); }
 }
 function startEra(){
   const era=ERAS[S.eraIdx]; applyLabels(); S.evReady=null; S.evNext=null; S.audNext=null;
-  S.turn=0; { const first=(era.introOrder||[]).map(id=>era.events.find(e=>e.id===id)).filter(Boolean); const rest=shuffle(era.events.filter(e=>!first.includes(e))); S.queue=[...first,...rest].slice(0,era.turns); } S.audTurn=2+Math.floor(Math.random()*2);
+  document.body.dataset.era=era.id;
+  const bg=$("bg"); bg.innerHTML="";
+  if(era.video && !matchMedia("(prefers-reduced-motion: reduce)").matches){ const v=document.createElement("video"); v.src=era.video; v.muted=true; v.loop=true; v.autoplay=true; v.playsInline=true; v.setAttribute("playsinline",""); v.poster=era.bg; bg.appendChild(v); v.play().catch(()=>{}); }
+  S.turn=0; S.queue=era.events.slice(0,era.turns); S.audTurn=3+Math.floor(Math.random()*2);
   $("era").textContent=era.name;
   if(era.bg) $("bg").style.backgroundImage=`url(${era.bg})`;
+  const u=unlockByKey("era:"+S.eraIdx);
   overlay(`<h2>${era.name}</h2><p>${era.intro}</p>
-    <p><b>Цель эпохи:</b> ${era.goal.text}.</p>
-    <button onclick="closeOv();nextTurn()">Начать</button>`);
+    <p><b>Вехи эпохи</b> (нужно пройти хотя бы две):</p><ol class="mslist">${era.milestones.map(m=>`<li>${m[1]}</li>`).join("")}</ol>
+    ${u.news.length?`<p><b>Открыто:</b> ${u.news.join(", ")}</p>`:""}
+    <button id="eraGo">Начать</button>`);
+  $("eraGo").onclick=async()=>{ closeOv(); if(u.joins.length) await showJoins(u.joins); nextTurn(); };
   render();
 }
 
 // ---------- ход ----------
+function dropOne(){ for(let i=S.queue.length-1;i>=0;i--) if(!S.queue[i].ms && !S.queue[i].guest){ S.queue.splice(i,1); return; } }
 function nextTurn(){
   $("log").innerHTML=""; $("nextBtn").classList.add("hidden");
   const due=S.pending.findIndex(p=>p.at<=S.turn);
   let kind="Событие";
   if(!S.queue.length) return endEra();
-  if(due>=0){ S.cur={...LATER[S.pending[due].id]}; S.pending.splice(due,1); S.queue.pop(); kind="Последствие твоего решения"; }
+  if(due>=0){ S.cur={...LATER[S.pending[due].id]}; S.pending.splice(due,1); dropOne(); kind="Последствие твоего решения"; }
   else if(S.turn+1>=S.audTurn && S.audNext){ return showAudience(); }
   else if(S.queue.length){
-    if(S.evReady && (S.turn+1)%3===0){ S.cur=S.evReady; S.evReady=null; S.queue.pop(); kind="Событие из твоей истории"; }
-    else S.cur=S.queue.shift();
+    if(S.evReady && (S.turn+1)%3===0 && !S.queue[0].ms && !S.queue[0].guest){ S.cur=S.evReady; S.evReady=null; S.queue.shift(); kind="Событие из твоей истории"; }
+    else { S.cur=S.queue.shift(); if(S.cur.guest) kind="Историческое событие · "+S.cur.guest; else if(S.cur.ms) kind="Веха эпохи"; }
   }
   else return endEra();
   S.turn++; if(S.lawCd>0) S.lawCd--;
@@ -65,9 +105,9 @@ function prepareAudience(){
 
 async function showAudience(){
   setBusy(true);
-  const aud=await S.audNext; S.audNext=null; S.audTurn=S.turn+3+Math.floor(Math.random()*2);
+  const aud=await S.audNext; S.audNext=null; S.audTurn=S.turn+4+Math.floor(Math.random()*2);
   if(!aud||!ADVISORS[aud.who]) return nextTurn();
-  S.turn++; S.queue.pop();
+  S.turn++; dropOne();
   S.cur={...aud, who:aud.who};
   showEvent("Частная аудиенция · "+ADVISORS[aud.who].name, true);
 }
@@ -75,7 +115,10 @@ async function showAudience(){
 function showEvent(kind, aud=false){
   if(S.eco){ line("fx", S.eco); S.eco=null; }
   $("turnInfo").textContent=`· ход ${S.turn}`;
-  $("evKind").textContent=kind; $("evKind").className=aud?"aud":"";
+  $("evKind").textContent=kind; $("evKind").className=aud?"aud":S.cur.guest?"guest":S.cur.ms?"msk":"";
+  $("eventCard").className=aud?"aud":S.cur.guest?"guest":"";
+  if(aud||S.cur.guest) toast(aud?`<b>${ADVISORS[S.cur.who]?.name||"Советник"}</b> просит говорить наедине`:`<b>Историческое событие</b><br>${S.cur.guest}`, aud?"aud":"guest");
+  $("law-hint")?.remove(); if(S.cur.lawMs) line("tip","Открыта панель «Законы» справа. Напиши там закон своими словами и нажми «Издать».");
   $("evTitle").textContent=S.cur.title;
   $("evText").textContent=S.cur.text;
   const box=$("choices"); box.innerHTML="";
@@ -93,9 +136,9 @@ function showEvent(kind, aud=false){
 
 function tutorial(){
   const tips={
-    1:"Ведана: Вождь, слушай. Сверху — то, чем живёт племя. Наведи на любой знак, я объясню. Справа — люди по делам: кто охотится, кто сторожит. Это работает каждый ход.",
-    2:"Мирон: Кнопки — то, что советуем мы. Но ты вождь. Напиши своё решение в поле внизу, любыми словами, и мы поймём.",
-    3:"Хорт: Иногда кто-то из нас попросит говорить наедине. Слушай внимательно: каждый тянет одеяло на себя."
+    1:"Хорт: Я Хорт, веду охотников. Сверху — вехи эпохи: три дела, которые нам надо сделать, чтобы выжить и вырасти. Первое — договориться, как делить добычу. Решай: нажми вариант или напиши своё.",
+    2:"Хорт: Справа — наши люди. Мужчины ходят на охоту, женщины, старики и дети собирают коренья. Переставляй их кнопками − и +. Внизу видно, сколько еды прибавится за ход.",
+    3:"Хорт: Еда — главное. Если она кончится, племя разбредётся. Копи к зиме."
   };
   if(tips[S.turn]) line("tip", tips[S.turn]);
   if(S.turn>=3) S.tutorial=false;
@@ -134,10 +177,15 @@ $("own").onsubmit = async e=>{
   apply(res);
 };
 
-function apply(res){
+async function apply(res){
   const ch=change(res.fx||{});
   for(const k in res.rel){ S.rel[k]=Math.max(-5,Math.min(5,S.rel[k]+(res.rel[k]||0))); }
   if(res.flag) S.flags[res.flag]=true;
+  if(res.trait&&S.traits[res.trait]!==undefined) S.traits[res.trait]++;
+  if(res.set==="nomad"){ S.traits.nomad=true; applyLabels(); } if(res.set==="settled") S.traits.nomad=false;
+  let msId=res.ms; if(!msId && res.msIf && S.cur?.check) { /* проверим после применения */ }
+  if(res.out) guestOutcome(res.out);
+  if(res.fight) fight(res);
   if(res.later) S.pending.push({id:res.later, at:S.turn+2+Math.floor(Math.random()*2)});
   if(res.mem) S.memory.push(`ход ${S.turn}: ${res.mem}`);
   if(res.narration) line("nar", res.narration);
@@ -145,6 +193,8 @@ function apply(res){
   if(S.cur?.hist) line("hist", "📜 В истории: "+S.cur.hist);
   ["choices","own","hint"].forEach(id=>$(id).classList.add("hidden"));
   render(ch);
+  if(res.msIf && S.cur?.check && S.cur.check(S.stats)) msId=res.msIf;
+  if(msId) await markMs(msId); else if(S.cur?.ms && !res.ms) glowScene("bad");
   if(checkDeath()) return;
   if(res.removed){ return exile(res.removed, true).then(()=>{ $("nextBtn").classList.remove("hidden"); setBusy(false); }); }
   $("nextBtn").classList.remove("hidden"); setBusy(false);
@@ -191,6 +241,9 @@ function economy(){
   const foes=Object.keys(ADVISORS).filter(k=>S.rel[k]<=-4);
   if(foes.length>=2){ fx.trust-=6; notes.push("заговор: "+foes.map(k=>ADVISORS[k].name).join(" и ")+" подбивают людей против тебя"); }
   if(S.jobs.guard < Math.floor(s.people/10) && !S.built.some(b=>b.theft) && Math.random()<0.5){ fx.goods-=3; fx.trust-=2; notes.push("стражи мало, растащили запасы"); }
+  if(s.food>70 && s.goods<15 && S.open.jobs.length>2) notes.push("еды вдоволь, а запасов мало: переставь людей на ремесло или обмен");
+  if(s.food<20) notes.push("еды мало: больше людей на охоту и сбор");
+  if(S.flags.tribute){ fx.goods-=2; notes.push("дань старшему −2"); }
   if(s.trust>70){ fx.trust-=1; notes.push("к хорошему привыкают: доверие тает"); }
   if(S.eraIdx>=2){ const up=Math.floor(s.people/12); fx.goods-=up; notes.push("содержание города −"+up); }
   const {free}=assign(), idle=free.men+free.women;
@@ -231,8 +284,9 @@ async function chronicleHtml(ending){
   return box;
 }
 
+function nationHtml(){ const n=NATIONS.find(x=>x.when(S.traits)); return `<div class="nation"><h3>Твой народ прошёл путь, похожий на путь ${n.name}</h3><p>${n.text}</p></div>`; }
 function checkDeath(){
-  const dead=Object.keys(S.stats).find(k=>S.stats[k]<=0); if(!dead) return false;
+  const dead=Object.keys(S.stats).find(k=>S.stats[k]<=0 && !(k==="goods"&&S.eraIdx<3)); if(!dead) return false;
   const why={food:"Племя голодает и разбредается.",goods:"Запасы кончились, менять и платить нечем.",
     mood:"Люди восстали против вождя.",trust:"Тебе больше никто не верит. Выбрали нового вождя.",people:"Племени не стало."}[dead];
   chronicleHtml("правление окончено: "+why).then(ch=>overlay(`<h2>Правление окончено</h2><p>${why}</p>${ch}
@@ -241,17 +295,19 @@ function checkDeath(){
 }
 
 async function endEra(){
-  const era=ERAS[S.eraIdx], ok=era.goal.check(S.stats);
+  const era=ERAS[S.eraIdx];
+  for(const k in (era.endCheck||{})) if(era.endCheck[k]()) S.ms[k]=true;
+  const ok=era.goal.check(S.stats);
   const last=S.eraIdx===ERAS.length-1;
   const ch=await chronicleHtml(`конец эпохи «${era.name}», цель ${ok?"выполнена":"провалена"}`);
-  overlay(`<h2>${era.outro.title}</h2><p>${era.outro.text}</p>
+  overlay(`<h2>Итог: ${era.name}</h2><p>${era.outro.text||era.outro}</p>
     <p><b>Цель эпохи ${ok?"выполнена":"не выполнена"}.</b> ${ok?era.goal.win:era.goal.lose}</p>
     ${ch}
-    ${last?`<p><b>Правление окончено.</b> Ты провёл людей от костра у реки до банка. Сыграй ещё: события, советники и аудиенции будут другими.</p><button onclick="closeOv();titleScreen()">Новая партия</button>`
+    ${last?`${nationHtml()}<p>Сыграй ещё: выбери другой путь, и народ станет другим.</p><button onclick="closeOv();titleScreen()">Новая партия</button>`
           :`<button onclick="closeOv();nextEra(${ok})">Дальше: ${ERAS[S.eraIdx+1].name}</button>`}`);
 }
 function nextEra(ok){
-  ageing(); change(ok?{trust:+4,goods:+5,people:+4}:{trust:-6,mood:-5,people:+2});
+  ageing(); change(ok?{trust:+4,goods:+8,mood:+5,people:+4}:{trust:-6,goods:+4,people:+2});
   S.memory.push(`--- ${ERAS[S.eraIdx+1].name}: начало, прошлая цель ${ok?"выполнена":"провалена"} ---`);
   S.eraIdx++; startEra();
 }
@@ -265,13 +321,41 @@ async function newLaw(){
   if(!r){ line("fx","Ветер унёс слова вождя: закон не услышали. Попробуй позже."); setBusy(false); return; }
   r.lines.forEach(l=>say(l.who,l.text));
   if(!r.accepted){ if(r.narration) line("nar",r.narration); setBusy(false); return; }
-  S.laws.push({name:r.name,text}); S.lawCd=3; S.memory.push(`ход ${S.turn}: издал закон «${r.name}»`);
+  S.laws.push({name:r.name,text}); S.lawCd=3; S.traits.law++; S.memory.push(`ход ${S.turn}: издал закон «${r.name}»`);
   if(r.narration) line("nar",r.narration);
   const ch=change(r.fx); for(const k in r.rel) S.rel[k]=Math.max(-5,Math.min(5,S.rel[k]+r.rel[k]));
-  fxLine(ch); render(ch); if(!checkDeath()) setBusy(false);
+  fxLine(ch); render(ch); if(checkDeath()) return;
+  if(ERAS[S.eraIdx].milestones.some(m=>m[0]==="law")) await markMs("law");
+  if(S.cur?.lawMs && !$("choices").classList.contains("hidden")){ ["choices","own","hint"].forEach(id=>$(id).classList.add("hidden")); $("nextBtn").classList.remove("hidden"); }
+  setBusy(false);
 }
 function repeal(i){ if(S.busy) return; const l=S.laws.splice(i,1)[0]; S.memory.push(`ход ${S.turn}: отменил закон «${l.name}»`);
   const ch=change({trust:-2}); line("fx",`Закон «${l.name}» отменён. Люди удивлены: Доверие −2`); render(ch); }
+
+// ---------- исходы исторических гостей ----------
+function guestOutcome(out){
+  const g=S.cur?.guest||"Чужеземцы";
+  if(out==="war"||(out==="risk"&&Math.random()<0.5)){
+    S.traits.war++;
+    const id="invasion_"+S.turn;
+    LATER[id]={title:"Нашествие", who:Object.keys(ADVISORS)[0], hist:S.cur?.hist,
+      text:`Войско, посланное за обиду (${g}), стоит у твоих границ. Сила решит дело: воины, стража и запасы.`,
+      choices:[{t:"Принять бой",fight:true,mem:"принял бой с нашествием"},
+               {t:"Откупиться большой данью",fx:{goods:-12,trust:-3},mem:"откупился от нашествия"},
+               {t:"Уйти и переждать в лесах и степи",fx:{food:-8,people:-2,mood:-4},mem:"увёл людей от нашествия"}]};
+    S.pending.push({id, at:S.turn+2});
+    line("fx","⚔ Посол уехал с угрозой. Жди войска.");
+  } else if(out==="tribute"){ S.flags.tribute=true; line("fx","Ты признал старшего. Дань теперь будет уходить каждый ход."); }
+  else if(out==="trade"||out==="alliance"){ S.traits.trade++; S.built.push({id:"pact_"+S.turn,name:"Союз: "+g,eff:{goods:1}}); line("fx","Союз заключён: +1 к запасам каждый ход."); }
+}
+function fight(res){
+  const power=S.pop.men+S.jobs.guard*2+Math.floor(S.stats.goods/10)+(S.built.some(b=>b.theft)?4:0);
+  const enemy=8+S.eraIdx*3+Math.floor(Math.random()*8);
+  const win=power>=enemy;
+  res.narration=win?`Твои воины (сила ${power}) отбили врага (сила ${enemy}). О твоём народе заговорили соседи.`:`Враг (сила ${enemy}) оказался сильнее твоих воинов (сила ${power}). Земли разорены.`;
+  const ch=change(win?{trust:+6,people:-2,goods:+4}:{people:-5,goods:-10,trust:-4,mood:-5});
+  fxLine(ch); S.traits.war++;
+}
 
 // ---------- постройки ----------
 function build(id){
@@ -322,22 +406,23 @@ function render(ch=[]){
   $("stats").innerHTML=Object.entries(STATS).map(([k,s])=>{ const v=S.stats[k];
     return `<div class="stat ${v<25?"low":""}" title="${s.tip}"><div class="row"><span>${s.name}</span><span><b>${v}</b>${d[k]?`<span class="d ${d[k]>0?"up":"down"}">${sign(d[k])}</span>`:""}</span></div><div class="bar"><i style="width:${v}%"></i></div></div>`;}).join("");
   const era=ERAS[S.eraIdx];
-  $("goal").innerHTML=`Цель эпохи: <b class="${era.goal.check(S.stats)?"ok":""}">${era.goal.text}</b> · осталось ходов: ${S.queue.length}`;
+  $("goal").innerHTML=era.milestones.map(m=>`<span class="ms ${S.ms[m[0]]?"done":""}" title="${m[2]}">${S.ms[m[0]]?"★":"☆"} ${m[1]}</span>`).join("")+` <span class="left">ходов: ${S.queue.length}</span>`;
   $("council").innerHTML=(Object.keys(ADVISORS).length?"":'<div class="law empty">Советников нет. Ты решаешь один.</div>')+Object.entries(ADVISORS).map(([k,a])=>{
     const r=S.rel[k], m=r>=3?"предан":r>=1?"доволен":r>=-1?"спокоен":r>-4?"недоволен":"враждебен";
-    return `<div class="adv ${S.cur?.who===k?"talk":""}"><div class="pic"${a.img?` style="background-image:url(${a.img})"`:""}>${a.img?"":a.ch}</div>
+    return `<div class="adv ${S.cur?.who===k?"talk":""}"><div class="pic"${portrait(k)?` style="background-image:url(${portrait(k)})"`:""}>${portrait(k)?"":a.ch}</div>
       <div><div class="nm">${a.name}</div><div class="rl">${a.role}</div><div class="mood ${r<0?"down":"up"}">${m} (${sign(r)})</div><div class="perk ${r<=-3?"down":r>=0?"up":""}">${r<=-3?"вредит: "+SLOTS[k].bad:r>=0?"даёт: "+SLOTS[k].good:"обижен, пользы нет"}</div></div><button class="exile" title="Прогнать из совета" onclick="askExile('${k}')">✕</button></div>`;
   }).join("");
   const asg=assign();
   $("units").textContent="";
   $("pop").innerHTML=Object.entries(GROUPS).map(([k,gr])=>'<span>'+gr.name+' <b>'+S.pop[k]+'</b>'+(k!=="kids"&&asg.free[k]?' <i>('+asg.free[k]+' своб.)</i>':'')+'</span>').join("");
-  $("jobs").innerHTML=Object.entries(JOBS).map(([k,j])=>
+  $("jobs").innerHTML=Object.entries(JOBS).filter(([k])=>S.open.jobs.includes(k)).map(([k,j])=>
     `<div class="job" data-k="${k}"><span>${j.name}<small>${j.tip}</small></span><span></span>
       <button onclick="setJob('${k}',-1)">−</button><span class="n">${S.jobs[k]}</span><button onclick="setJob('${k}',1)">+</button></div>`).join("");
   $("laws").innerHTML = S.laws.map((l,i)=>`<div class="law" title="${esc(l.text)}"><span>§ ${esc(l.name)}</span><button onclick="repeal(${i})" title="Отменить (Доверие −2)">×</button></div>`).join("") || '<div class="law empty">Законов пока нет</div>';
   const can=S.lawCd<=0&&S.laws.length<4;
   $("lawText").disabled=!can||S.busy; $("lawBtn").disabled=!can||S.busy;
   $("lawText").placeholder = S.laws.length>=4 ? "Не больше 4 законов" : S.lawCd>0 ? `Новый закон через ${S.lawCd} х.` : "«десятая часть добычи — в общий запас»";
+  document.querySelector(".lawbox").classList.toggle("hidden",!S.open.laws); document.querySelector(".buildbox").classList.toggle("hidden",!S.open.builds||!BUILDINGS[S.eraIdx].length);
   $("builds").innerHTML=BUILDINGS[S.eraIdx].map(b=>{ const has=S.built.some(x=>x.id===b.id);
     return `<div class="bld ${has?"has":""}"><span>${b.name}<small>${b.tip}</small></span>${has?"<b>✓</b>":`<button onclick="build('${b.id}')" ${S.stats.goods<=b.cost?"disabled":""}>${b.cost}</button>`}</div>`;}).join("")
     + (S.built.filter(b=>!BUILDINGS[S.eraIdx].includes(b)).length?`<div class="bld old">Прежние: ${S.built.filter(b=>!BUILDINGS[S.eraIdx].includes(b)).map(b=>b.name).join(", ")}</div>`:"");
