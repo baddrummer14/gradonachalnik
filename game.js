@@ -386,7 +386,7 @@ function talkTo(k){
   if(S.busy||!S.cur||!$("nextBtn").classList.contains("hidden")===false&&false) return;
   if((S.talkCd||0)>S.turn){ toast(`Позвать на разговор снова можно через ${S.talkCd-S.turn} х.`); return; }
   const a=ADVISORS[k]; S.talkCd=S.turn+3;
-  overlay(`<div class="join"><div class="jpic" style="background-image:url(${portrait(k)})"></div><h2>Разговор с ${a.name}</h2>
+  overlay(`<div class="join"><div class="jpic" style="background-image:url(${portrait(k)})"></div><h2>Разговор наедине: ${a.name}</h2>
     <p class="rl">Отношение сейчас: ${sign(S.rel[k])}. Чего хочет: ${a.wants}.</p>
     <div class="talkopts">
      <button onclick="talkDo('${k}','gift')">Подарить лучшее из запасов (запасы −4, отношение +2)</button>
