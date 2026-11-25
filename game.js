@@ -330,7 +330,7 @@ async function endEra(){
   const done=era.milestones.filter(m=>S.ms[m[0]]), miss=era.milestones.filter(m=>!S.ms[m[0]]);
   overlay(`<div class="erapic" style="background-image:url(${era.bg})"></div><h2>Итог: ${era.name}</h2>
     <ul class="msres">${done.map(m=>`<li class="ok">★ ${m[1]} — <i>${m[2]}</i></li>`).join("")}${miss.map(m=>`<li class="no">☆ ${m[1]} — не пройдена</li>`).join("")}</ul>
-    <p>${miss.length?"Не все уроки эпохи пройдены, и это аукнется: следующая эпоха начнётся слабее.":(era.outro.text||era.outro)}</p>
+    <p>${miss.length?(ok?"Не все уроки эпохи пройдены: их наследие народу не достанется.":"Уроки эпохи не усвоены, и это аукнется: следующая эпоха начнётся слабее."):(era.outro.text||era.outro)}</p>
     <p><b>Цель эпохи ${ok?"выполнена":"не выполнена"}.</b> ${ok?era.goal.win:era.goal.lose}</p>
     ${ch}
     ${last?`${nationHtml()}<p>Сыграй ещё: выбери другой путь, и народ станет другим.</p><button onclick="closeOv();titleScreen()">Новая партия</button>`
@@ -496,14 +496,16 @@ function line(cls, html, raw){
 }
 const esc = s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 function setBusy(b){ S.busy=b; document.querySelectorAll("#choices button,#own button,#ownText").forEach(x=>x.disabled=b); }
-function overlay(h){ $("ovBox").innerHTML=h; $("overlay").classList.remove("hidden"); }
-function closeOv(){ $("overlay").classList.add("hidden"); }
+function overlay(h){ $("ovBox").innerHTML=h; $("overlay").classList.remove("hidden","title"); $("ovBox").scrollTop=0; }
+function closeOv(){ $("overlay").classList.add("hidden"); $("overlay").classList.remove("title"); }
 
 // ---------- титульный экран и экскурсия ----------
 function titleScreen(){
-  overlay(`<div class="title-screen"><div class="crest">✦</div><h1>Градоначальникъ</h1>
-  <div class="sub">Проведи свой народ от костра у реки до великой державы. Двенадцать тысяч лет истории — твоими решениями.</div>
-  <p>У тебя восемнадцать человек, огонь и добыча. Впереди приручение зверя, первые города, законы, монета, торговые пути и банки. Каждая эпоха ставит перед тобой те же задачи, что стояли перед настоящими правителями.</p>
+  overlay(`<div class="title-screen"><div class="ts-kicker">историческая стратегия с живыми советниками</div><h1>Градоначальникъ</h1>
+  <div class="ts-rule"><span></span><i>✦</i><span></span></div>
+  <div class="sub">Проведи свой народ от костра у реки до банков и бирж. Двенадцать тысяч лет истории твоими решениями.</div>
+  <div class="ts-eras">${ERAS.map(e=>{ const [num,nm]=e.name.replace(/^Эпоха\s+/,"").split(". "); return `<figure style="background-image:url(${e.bg})"><b>${num}</b><span>${nm}</span></figure>`; }).join("")}</div>
+  <p class="ts-lead">У тебя восемнадцать человек, огонь и добыча. Каждая эпоха ставит перед тобой те же задачи, что стояли перед настоящими правителями.</p>
   <ul class="how">
    <li><b>Решай.</b> Выбери вариант или напиши своё решение словами — советники поймут и ответят.</li>
    <li><b>Распоряжайся людьми.</b> Кто охотится, кто собирает, кто сторожит — от этого зависит, будет ли сыт народ.</li>
@@ -511,6 +513,7 @@ function titleScreen(){
   </ul>
   <p class="end">В конце ты узнаешь, на какой народ истории похож твой.</p>
   <div class="btns"><button class="main" onclick="closeOv();startTour()">Показать, как играть</button><button onclick="closeOv();newGame()">Сразу в игру</button></div></div>`);
+  $("overlay").classList.add("title");
 }
 
 const TOUR=[

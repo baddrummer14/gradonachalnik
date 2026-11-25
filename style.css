@@ -164,3 +164,30 @@ body[data-era=coin] #eventCard::before,body[data-era=coin] #side h3::after{backg
 body[data-era=trade] #eventCard::before,body[data-era=trade] #side h3::after{background-image:repeating-linear-gradient(45deg,var(--gold) 0 2px,transparent 2px 6px),repeating-linear-gradient(-45deg,var(--gold) 0 2px,transparent 2px 6px)}
 /* VI: двойная линейка банкноты */
 body[data-era=bank] #eventCard::before,body[data-era=bank] #side h3::after{background-image:linear-gradient(var(--gold) 1px,transparent 1px,transparent 3px,var(--gold) 3px,var(--gold) 4px,transparent 4px,transparent 6px,var(--gold) 6px,var(--gold) 7px,transparent 7px)}
+
+/* титульный экран: полотно первой эпохи, рамка, лента из шести эпох */
+#overlay.title{background:linear-gradient(#0d0a08b8,#0d0a08f0),url(img/bg_tribe.jpg) center/cover;padding:12px}
+#overlay.title #ovBox{max-width:780px;background:linear-gradient(#2e241af5,#1c1610fa);border:1px solid #d9a441;border-radius:4px;padding:34px 38px 28px;
+  box-shadow:0 0 0 5px #17120e,0 0 0 6px #d9a44155,0 30px 90px #000d;outline:1px solid #d9a44133;outline-offset:-10px}
+.title-screen .ts-kicker{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:#b9a88f;margin-bottom:10px}
+.title-screen h1{font-size:clamp(34px,7.5vw,66px);letter-spacing:.06em;line-height:1.05;margin:0;font-weight:normal;
+  background:linear-gradient(#fbe6ae 20%,#d9a441 55%,#a06a1e);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 #0009)}
+.title-screen .ts-rule{display:flex;align-items:center;gap:12px;margin:12px auto 10px;max-width:420px;color:#d9a441}
+.title-screen .ts-rule span{flex:1;height:1px;background:linear-gradient(90deg,transparent,#d9a441)} .title-screen .ts-rule span:last-child{transform:scaleX(-1)}
+.title-screen .ts-rule i{font-style:normal;font-size:14px}
+.title-screen .sub{font-size:18px;font-style:italic;color:#e8d6b0;max-width:540px;margin:0 auto 18px}
+.title-screen .ts-eras{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:0 0 16px}
+.title-screen .ts-eras figure{margin:0;height:84px;background-size:cover;background-position:center;border:1px solid #d9a44166;border-radius:3px;position:relative;overflow:hidden}
+.title-screen .ts-eras figure::after{content:"";position:absolute;inset:0;background:linear-gradient(#0000 30%,#0d0a08e6)}
+.title-screen .ts-eras b{position:absolute;left:6px;top:3px;z-index:1;color:#fbe6ae;font-weight:normal;font-size:15px;text-shadow:0 1px 3px #000}
+.title-screen .ts-eras span{position:absolute;left:4px;right:4px;bottom:4px;z-index:1;font-size:10.5px;line-height:1.15;color:#f1e6d3;text-align:center}
+.title-screen .ts-lead{text-align:center!important;color:#cdbb9f;font-size:15px;max-width:600px;margin:0 auto 14px}
+.title-screen .how{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+.title-screen .how li{background:#0d0a0866;border:0;border-top:2px solid #d9a441;border-radius:0 0 4px 4px;padding:10px 12px;margin:0;font-size:14px;color:#cdbb9f}
+.title-screen .how li b{display:block;color:#fbe6ae;font-size:16px;margin-bottom:3px}
+.title-screen .end{color:#d9a441;font-style:italic;margin:14px 0 4px}
+.title-screen .btns{margin-top:14px} .title-screen .btns button{padding:13px 26px;font-size:16px;background:transparent;border:1px solid #d9a44188;color:#f1e6d3;border-radius:3px;letter-spacing:.03em}
+.title-screen .btns button:hover{border-color:#fbe6ae;background:#d9a4411f}
+.title-screen .btns .main{background:linear-gradient(#f0cd7a,#b9842d);color:#1b1612;border-color:#fbe6ae;font-weight:bold;box-shadow:0 4px 18px #d9a44140}
+.title-screen .btns .main:hover{background:linear-gradient(#fbe6ae,#c9953a)}
+@media(max-width:640px){#overlay.title #ovBox{padding:22px 16px 18px} .title-screen .ts-eras{grid-template-columns:repeat(3,1fr)} .title-screen .ts-eras figure{height:64px} .title-screen .how{grid-template-columns:1fr} .title-screen .ts-kicker{letter-spacing:.18em;font-size:11px}}
