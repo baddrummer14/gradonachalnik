@@ -139,7 +139,7 @@ function showEvent(kind, aud=false){
   $("evText").textContent=evText;
   const box=$("choices"); box.innerHTML="";
   S.cur.choices.forEach(c=>{
-    const b=document.createElement("button"); b.textContent=c.t;
+    const b=document.createElement("button"); b.textContent=Object.keys(ROLE_NAME).reduce((t,k)=>isHouse(k)?t.split(ROLE_NAME[k][0]).join(ADVISORS[k].name):t, c.t);
     b.onclick=()=>decide({...c, fx:{...c.fx}, rel:{...(c.rel||{})}}, c.t);
     box.appendChild(b);
   });

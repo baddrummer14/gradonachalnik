@@ -143,3 +143,4 @@ body[data-era=hunters]{--gold:#d9a441} body[data-era=neolithic]{--gold:#c98a55} 
 
 .adv .talk{position:absolute;top:4px;right:26px;padding:0 5px;font-size:12px;opacity:.45;background:none;border:none}
 .adv:hover .talk{opacity:1} .talkopts{display:flex;flex-direction:column;gap:6px;margin-top:10px} .talkopts button{text-align:left}
+#treasury .bld button.nz::after{content:""}
