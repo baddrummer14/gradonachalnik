@@ -39,19 +39,14 @@ ${ev.guest?`Это визит исторической личности: ${ev.gu
   },
 
   async post(prompt){
-    let last="";
+    // спрашиваем все прокси разом и берём первый удачный ответ: у разных игроков открываются разные
+    const one=async(url,ms)=>{ const r=await fetch(url,{method:"POST",signal:AbortSignal.timeout(ms),headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+      const j=await r.json().catch(()=>({})); if(r.ok&&j.text) return j.text; throw new Error(url+": "+r.status+" "+(j.error||"")); };
     for(let attempt=0; attempt<2; attempt++){
-      for(let i=0;i<this.PROXIES.length;i++){
-        const url=this.PROXIES[i];
-        try{
-          const r=await fetch(url,{method:"POST",signal:AbortSignal.timeout(attempt?20000:12000),headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
-          const j=await r.json().catch(()=>({}));
-          if(r.ok&&j.text){ if(i>0){ this.PROXIES.splice(i,1); this.PROXIES.unshift(url); } return j.text; }
-          last=url+": "+r.status+" "+(j.error||"");
-        }catch(e){ last=url+": "+e.name; }
-      }
+      try{ return await Promise.any(this.PROXIES.map(u=>one(u, attempt?25000:15000))); }
+      catch(e){ this.lastError=(e.errors||[e]).map(x=>x.message||x.name).join(" | "); }
     }
-    this.lastError=last; return null;
+    return null;
   },
 
   // Сырой запрос к прокси: вернёт объект из JSON или null.
