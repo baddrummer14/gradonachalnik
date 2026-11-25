@@ -181,7 +181,8 @@ $("own").onsubmit = async e=>{
 };
 
 async function apply(res){
-  const ch=change(res.fx||{});
+  S.warLoss = !!res.fight || res.trait==="war" || /напа|бой|войн|сраж|набег|копь|убил|погиб/i.test((res.narration||"")+(res.mem||""));
+  const ch=change(res.fx||{}); S.warLoss=false;
   for(const k in res.rel){ S.rel[k]=Math.max(-5,Math.min(5,S.rel[k]+(res.rel[k]||0))); }
   if(res.flag) S.flags[res.flag]=true;
   if(res.trait&&S.traits[res.trait]!==undefined) S.traits[res.trait]++;
@@ -264,8 +265,12 @@ function forecast(){ const f=produce(); if(S.eraIdx>=2) f.goods-=Math.floor(S.st
 
 // люди прибавились или убыли: раскладываем по группам
 function popChange(v){
+  const lost={};
   if(v>0){ for(let i=0;i<v;i++){ const gr=["kids","men","women","kids"][i%4]; S.pop[gr]++; } }
-  else for(let i=0;i<-v;i++){ const gr=Object.keys(S.pop).sort((a,b)=>S.pop[b]-S.pop[a])[0]; if(S.pop[gr]>0) S.pop[gr]--; }
+  else for(let i=0;i<-v;i++){
+    let gr = S.warLoss && S.pop.men>1 ? "men" : Object.keys(S.pop).sort((a,b)=>S.pop[b]-S.pop[a])[0];
+    if(S.pop[gr]>0){ S.pop[gr]--; lost[gr]=(lost[gr]||0)+1; } }
+  if(Object.keys(lost).length) S.lostNote=Object.entries(lost).map(([k,n])=>GROUPS[k].name.toLowerCase()+" −"+n).join(", ");
 }
 // смена поколения между эпохами: дети взрослеют, взрослые стареют, старики уходят
 function ageing(){
@@ -282,13 +287,13 @@ function change(fx){ const ch=[];
   // людей стало меньше — снимаем с дел тех, кого больше нет
   while(!assign().ok){ const k=Object.keys(S.jobs).sort((a,b)=>S.jobs[b]-S.jobs[a])[0]; if(!S.jobs[k]) break; S.jobs[k]--; }
   return ch; }
-function fxLine(ch){ if(ch.length) line("fx", ch.map(([k,v])=>`<span class="${v>0?"up":"down"}">${STATS[k].name} ${sign(v)}</span>`).join(" · "), true); }
+function fxLine(ch){ if(ch.length) line("fx", ch.map(([k,v])=>`<span class="${v>0?"up":"down"}">${STATS[k].name} ${sign(v)}${k==="people"&&v<0&&S.lostNote?` (${S.lostNote})`:""}</span>`).join(" · "), true); S.lostNote=""; }
 
 async function chronicleHtml(ending){
   const box=`<details class="chronbox"><summary>📜 Летопись правления</summary><div id="chron"><i>Летописец пишет…</i></div></details>`;
   setTimeout(async()=>{ const c=await AI.chronicle(aiState(), ending); const el=$("chron"); if(!el) return;
     el.innerHTML = c ? `<h3>${esc(c.nickname?"Вождь "+c.nickname:"Летопись")}</h3><p class="chron">${esc(c.text)}</p>`
-      : `<h3>Летопись</h3><ul>${S.memory.map(m=>`<li>${esc(m)}</li>`).join("")}</ul>`; },50);
+      : `<ul>${S.memory.map(m=>`<li>${esc(m)}</li>`).join("")}</ul>`; },50);
   return box;
 }
 
@@ -311,7 +316,7 @@ async function endEra(){
   const done=era.milestones.filter(m=>S.ms[m[0]]), miss=era.milestones.filter(m=>!S.ms[m[0]]);
   overlay(`<div class="erapic" style="background-image:url(${era.bg})"></div><h2>Итог: ${era.name}</h2>
     <ul class="msres">${done.map(m=>`<li class="ok">★ ${m[1]} — <i>${m[2]}</i></li>`).join("")}${miss.map(m=>`<li class="no">☆ ${m[1]} — не пройдена</li>`).join("")}</ul>
-    <p>${era.outro.text||era.outro}</p>
+    <p>${miss.length?"Не все уроки эпохи пройдены, и это аукнется: следующая эпоха начнётся слабее.":(era.outro.text||era.outro)}</p>
     <p><b>Цель эпохи ${ok?"выполнена":"не выполнена"}.</b> ${ok?era.goal.win:era.goal.lose}</p>
     ${ch}
     ${last?`${nationHtml()}<p>Сыграй ещё: выбери другой путь, и народ станет другим.</p><button onclick="closeOv();titleScreen()">Новая партия</button>`
@@ -376,6 +381,28 @@ function build(id){
   line("nar",`Построено: ${b.name}. ${b.tip}.`); render(ch);
 }
 
+// ---------- разговор с советником по твоей воле ----------
+function talkTo(k){
+  if(S.busy||!S.cur||!$("nextBtn").classList.contains("hidden")===false&&false) return;
+  if((S.talkCd||0)>S.turn){ toast(`Позвать на разговор снова можно через ${S.talkCd-S.turn} х.`); return; }
+  const a=ADVISORS[k]; S.talkCd=S.turn+3;
+  overlay(`<div class="join"><div class="jpic" style="background-image:url(${portrait(k)})"></div><h2>Разговор с ${a.name}</h2>
+    <p class="rl">Отношение сейчас: ${sign(S.rel[k])}. Чего хочет: ${a.wants}.</p>
+    <div class="talkopts">
+     <button onclick="talkDo('${k}','gift')">Подарить лучшее из запасов (запасы −4, отношение +2)</button>
+     <button onclick="talkDo('${k}','praise')">Похвалить при всех (отношение +1, но другие ревнуют)</button>
+     <button onclick="talkDo('${k}','ask')">Спросить его совета и сделать по его (отношение +1)</button>
+     <button onclick="closeOv();S.talkCd=0">Передумать</button></div></div>`);
+}
+function talkDo(k,how){
+  closeOv(); const a=ADVISORS[k]; let ch=[];
+  if(how==="gift"){ ch=change({goods:-4}); S.rel[k]=Math.min(5,S.rel[k]+2); S.memory.push(`ход ${S.turn}: одарил ${a.name}`); }
+  if(how==="praise"){ S.rel[k]=Math.min(5,S.rel[k]+1); const o=Object.keys(ADVISORS).filter(x=>x!==k); if(o.length){ const j=o[Math.floor(Math.random()*o.length)]; S.rel[j]=Math.max(-5,S.rel[j]-1); line("fx",`${ADVISORS[j].name} ревнует: отношение −1`); } S.memory.push(`ход ${S.turn}: похвалил ${a.name} при всех`); }
+  if(how==="ask"){ S.rel[k]=Math.min(5,S.rel[k]+1); ch=change({trust:-1}); S.memory.push(`ход ${S.turn}: последовал совету ${a.name}`); line("fx","Люди видят, что решает советник, а не ты: доверие −1"); }
+  say(k, {gift:"Не ожидал. Запомню.",praise:"Слышали все? То-то.",ask:"Наконец-то ты спросил того, кто знает."}[how]);
+  fxLine(ch); render(ch);
+}
+
 // ---------- изгнание советника ----------
 function askExile(k){
   if(S.busy) return; const a=ADVISORS[k];
@@ -421,7 +448,7 @@ function render(ch=[]){
   $("council").innerHTML=(Object.keys(ADVISORS).length?"":'<div class="law empty">Советников нет. Ты решаешь один.</div>')+Object.entries(ADVISORS).map(([k,a])=>{
     const r=S.rel[k], m=r>=3?"предан":r>=1?"доволен":r>=-1?"спокоен":r>-4?"недоволен":"враждебен";
     return `<div class="adv c-${k} ${S.cur?.who===k?"talk":""}" data-k="${k}"><div class="pic"${portrait(k)?` style="background-image:url(${portrait(k)})"`:""}>${portrait(k)?"":a.ch}</div>
-      <div><div class="nm">${a.name}</div><div class="rl">${a.role}</div><div class="mood ${r<0?"down":"up"}">${m} (${sign(r)})</div><div class="perk ${r<=-3?"down":r>=0?"up":""}">${r<=-3?"вредит: "+SLOTS[k].bad:r>=0?"даёт: "+SLOTS[k].good:"обижен, пользы нет"}</div></div><button class="exile" title="Прогнать из совета" onclick="askExile('${k}')">✕</button></div>`;
+      <div><div class="nm">${a.name}</div><div class="rl">${a.role}</div><div class="mood ${r<0?"down":"up"}">${m} (${sign(r)})</div><div class="perk ${r<=-3?"down":r>=0?"up":""}">${r<=-3?"вредит: "+SLOTS[k].bad:r>=0?"даёт: "+SLOTS[k].good:"обижен, пользы нет"}</div></div><button class="talk" title="Позвать на разговор: вернуть расположение" onclick="talkTo('${k}')">💬</button><button class="exile" title="Прогнать из совета" onclick="askExile('${k}')">✕</button></div>`;
   }).join("");
   const asg=assign();
   $("units").textContent="";

@@ -140,3 +140,6 @@ body[data-era=hunters]{--gold:#d9a441} body[data-era=neolithic]{--gold:#c98a55} 
 .msres{list-style:none;padding:0} .msres li{margin:4px 0} .msres .ok{color:#f2d27a} .msres .no{color:var(--muted)}
 .chronbox{margin:10px 0;background:#2a221b;border-radius:8px;padding:6px 10px} .chronbox summary{cursor:pointer;color:var(--gold)}
 #own{margin-top:8px} #hint{margin:6px 0 2px}
+
+.adv .talk{position:absolute;top:4px;right:26px;padding:0 5px;font-size:12px;opacity:.45;background:none;border:none}
+.adv:hover .talk{opacity:1} .talkopts{display:flex;flex-direction:column;gap:6px;margin-top:10px} .talkopts button{text-align:left}
