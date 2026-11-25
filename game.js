@@ -8,6 +8,7 @@ const S = { stats:{}, rel:{}, jobs:{}, flags:{}, memory:[], pending:[], eraIdx:0
 const BASE_ADVISORS=JSON.parse(JSON.stringify(ADVISORS));
 
 const isFem = k => { const a=ADVISORS[k]; return !!a && (HOUSE_NAMES.vedana.includes(a.name) || a.res==="lyubava"); };
+const histLabel = () => S.cur?.source==="ai" ? "📜 В истории (со слов ИИ-летописца, не проверено): " : "📜 В истории: ";
 function aiState(){ return {stats:S.stats, rel:S.rel, memory:S.memory, laws:S.laws, pop:S.pop, eraName:ERAS[S.eraIdx].name}; }
 
 function newGame(silent){
@@ -183,7 +184,7 @@ $("own").onsubmit = async e=>{
   // пока ИИ думает — историческая справка вместо болтовни
   const dots=document.createElement("div"); dots.className="line thinking"; dots.textContent="⋯";
   await sleep(500);
-  if(S.cur?.hist){ line("hist","📜 В истории: "+S.cur.hist); S.histShown=true; }
+  if(S.cur?.hist){ line("hist",histLabel()+S.cur.hist); S.histShown=true; }
   else { const sc=(WAIT_SCENES[S.eraIdx]||WAIT_SCENES[0]); line("wait", sc[Math.floor(Math.random()*sc.length)].replace("{a}", ADVISORS[S.cur?.who]?.name||"Гонец")); }
   $("log").appendChild(dots); await p;
   dots.remove();
@@ -211,7 +212,7 @@ async function apply(res){
   if(res.mem) S.memory.push(`ход ${S.turn}: ${res.mem}`);
   if(res.narration) line("nar", res.narration);
   fxLine(ch);
-  if(S.cur?.hist && !S.histShown) line("hist", "📜 В истории: "+S.cur.hist);
+  if(S.cur?.hist && !S.histShown) line("hist", histLabel()+S.cur.hist);
   S.histShown=false;
   ["choices","own","hint"].forEach(id=>$(id).classList.add("hidden"));
   render(ch);
@@ -509,7 +510,7 @@ function titleScreen(){
   <ul class="how">
    <li><b>Решай.</b> Выбери вариант или напиши своё решение словами — советники поймут и ответят.</li>
    <li><b>Распоряжайся людьми.</b> Кто охотится, кто собирает, кто сторожит — от этого зависит, будет ли сыт народ.</li>
-   <li><b>Проходи вехи.</b> Каждая открывает новое: советников, работы, законы, постройки.</li>
+   <li><b>Проходи вехи.</b> Они открывают новое: советников, работы, постройки, наследие.</li>
   </ul>
   <p class="end">В конце ты узнаешь, на какой народ истории похож твой.</p>
   <div class="btns"><button class="main" onclick="closeOv();startTour()">Показать, как играть</button><button onclick="closeOv();newGame()">Сразу в игру</button></div></div>`);
@@ -517,7 +518,7 @@ function titleScreen(){
 }
 
 const TOUR=[
-  ["#stats","Чем живёт племя","Еда, запасы, довольство, доверие к тебе и число людей. Если любой показатель упадёт до нуля, правление окончено. Наведи на показатель, чтобы узнать подробнее."],
+  ["#stats","Чем живёт племя","Еда, запасы, довольство, доверие к тебе и число людей. Если еда, довольство, доверие или люди упадут до нуля, правление окончено. С эпохи монеты то же грозит и пустой казне. Наведи на показатель, чтобы узнать подробнее."],
   ["#goal","Вехи эпохи","Три главных дела эпохи. Пройдёшь веху — она загорится, и откроется что-то новое. Нужно пройти хотя бы две."],
   ["#eventCard","Событие хода","Здесь каждый ход что-то случается. Читай, что произошло, и решай. Ниже появятся ответы советников и последствия."],
   ["#own","Твоё решение","Главное в игре. Напиши, как поступить, своими словами — например «пусть вор отработает неделю у костра». Или выбери один из вариантов ниже."],

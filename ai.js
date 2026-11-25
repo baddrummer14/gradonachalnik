@@ -26,7 +26,8 @@ ${ev.guest?`Это визит исторической личности: ${ev.gu
 {"possible":true,"fx":{"food":0,"goods":0,"mood":0,"trust":0,"people":0},"rel":{"hort":0,"vedana":0,"miron":0,"gost":0},
 "lines":[{"who":"hort|vedana|miron|gost","text":"реплика 1-2 предложения"}],
 "narration":"что произошло, 1-2 предложения, живо, без пафоса","mem":"кратко, что решил вождь (до 8 слов)",
-"removed":"","ms":false,"out":""}
+"removed":"","ms":false,"out":"","trait":""}
+В "trait" впиши, чем по сути было решение, одним словом: war (сила, оружие, угроза), trade (обмен, торговля, выгода), law (правило, суд, порядок), faith (обычай, вера, милосердие). Если ни одно не подходит, оставь пустым.
 Если решение вождя убирает советника из совета (казнь, изгнание, смерть, уход), впиши его ключ в "removed" (hort|vedana|miron|gost), иначе оставь пустым.`;
   },
 
@@ -147,7 +148,7 @@ ${a.name} карьерист и просит частной аудиенции: 
       for(const k in ADVISORS) rel[k]=Math.max(-2,Math.min(2,Math.round(+j.rel?.[k]||0)));
       const lines=(j.lines||[]).filter(l=>ADVISORS[l.who]).slice(0,3);
       this.budget(fx,10,true); this.capRel(rel);
-      return {fx, rel, lines, narration:String(j.narration||""), mem:String(j.mem||"принял своё решение").slice(0,80), removed:ADVISORS[j.removed]?j.removed:"", msOk:j.ms===true, out:["war","tribute","trade","refuse"].includes(j.out)?j.out:""};
+      return {fx, rel, lines, narration:String(j.narration||""), mem:String(j.mem||"принял своё решение").slice(0,80), removed:ADVISORS[j.removed]?j.removed:"", msOk:j.ms===true, trait:["war","trade","law","faith"].includes(j.trait)?j.trait:"", out:["war","tribute","trade","refuse"].includes(j.out)?j.out:""};
     }catch(e){ return null; }
   },
 
