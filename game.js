@@ -130,7 +130,10 @@ function showEvent(kind, aud=false){
   if(aud||S.cur.guest) toast(aud?`<b>${ADVISORS[S.cur.who]?.name||"Советник"}</b> просит говорить наедине`:`<b>Историческое событие</b><br>${S.cur.guest}`, aud?"aud":"guest");
   $("law-hint")?.remove(); if(S.cur.lawMs) line("tip","Открыта панель «Законы» справа. Напиши там закон своими словами и нажми «Издать».");
   $("evTitle").textContent=S.cur.title;
-  $("evText").textContent=S.cur.text;
+  // кого ещё нет в совете — называем по роли, а не по имени
+  const ROLE_NAME={hort:["Хорт","старший охотник"],vedana:["Ведана","старая жрица"],miron:["Бажен","торговец"],gost:["Гостомысл","старый мастер"]};
+  let evText=S.cur.text; for(const k in ROLE_NAME){ if(!ADVISORS[k]||ADVISORS[k].name!==ROLE_NAME[k][0]) evText=evText.split(ROLE_NAME[k][0]).join(ROLE_NAME[k][1]); }
+  $("evText").textContent=evText;
   const box=$("choices"); box.innerHTML="";
   S.cur.choices.forEach(c=>{
     const b=document.createElement("button"); b.textContent=c.t;
