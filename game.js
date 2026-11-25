@@ -167,19 +167,12 @@ $("own").onsubmit = async e=>{
   setBusy(true); say("you", text);
   const p=AI.judge(aiState(), S.cur, text);
   let done=false; p.then(()=>done=true);
-  // сцена исполнения: 1-2 строки обстановки и одна реплика советника в его характере
-  const who=ADVISORS[S.cur?.who]?S.cur.who:Object.keys(ADVISORS)[0];
-  const scene=shuffle(WAIT_SCENES[S.eraIdx]||WAIT_SCENES[0]).map(t=>t.replace("{a}", who?ADVISORS[who].name:"Гонец"));
-  const others=shuffle(Object.keys(ADVISORS).filter(k=>k!==who&&ADVISORS[k].banter));
-  const steps=[["nar",scene[0]]];
-  if(others[0]) steps.push(["say",others[0],ADVISORS[others[0]].banter[Math.floor(Math.random()*ADVISORS[others[0]].banter.length)]]);
-  steps.push(["nar",scene[1]],["nar",scene[2]]);
+  // пока ИИ думает — историческая справка вместо болтовни
   const dots=document.createElement("div"); dots.className="line thinking"; dots.textContent="⋯";
-  await sleep(700);
-  for(const st of steps){ if(done) break;
-    if(st[0]==="nar") line("wait", st[1]); else say(st[1],st[2],"banter");
-    $("log").appendChild(dots);
-    await Promise.race([sleep(4500), p]); }
+  await sleep(500);
+  if(S.cur?.hist){ line("hist","📜 В истории: "+S.cur.hist); S.histShown=true; }
+  else { const sc=(WAIT_SCENES[S.eraIdx]||WAIT_SCENES[0]); line("wait", sc[Math.floor(Math.random()*sc.length)].replace("{a}", ADVISORS[S.cur?.who]?.name||"Гонец")); }
+  $("log").appendChild(dots); await p;
   dots.remove();
   const res=await p;
   if(res.source!=="ai" && AI.lastError){ console.warn("[ИИ]", AI.lastError); if(location.search.includes("debug")) line("fx","[отладка] "+AI.lastError); }
@@ -204,7 +197,8 @@ async function apply(res){
   if(res.mem) S.memory.push(`ход ${S.turn}: ${res.mem}`);
   if(res.narration) line("nar", res.narration);
   fxLine(ch);
-  if(S.cur?.hist) line("hist", "📜 В истории: "+S.cur.hist);
+  if(S.cur?.hist && !S.histShown) line("hist", "📜 В истории: "+S.cur.hist);
+  S.histShown=false;
   ["choices","own","hint"].forEach(id=>$(id).classList.add("hidden"));
   render(ch);
   if(res.msIf && S.cur?.check && S.cur.check(S.stats)) msId=res.msIf;
