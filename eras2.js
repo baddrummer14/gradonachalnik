@@ -271,8 +271,8 @@ const NATIONS = [
 ];
 
 // Портреты рода по эпохам: берём последний доступный не позже текущей эпохи
-const PORTRAITS = { hort:["img/hort.jpg","img/hort_e2.jpg","img/hort_e3.jpg"], vedana:["img/vedana.jpg","img/vedana_e2.jpg","img/vedana_e3.jpg"],
-  miron:["img/miron.jpg","img/miron_e2.jpg","img/miron_e3.jpg"], gost:["img/gost.jpg","img/gost_e2.jpg","img/gost_e3.jpg"] };
+const PORTRAITS = { hort:["img/hort.jpg","img/hort_e2.jpg","img/hort_e3.jpg","img/hort_e4.jpg","img/hort_e5.jpg","img/hort_e6.jpg"], vedana:["img/vedana.jpg","img/vedana_e2.jpg","img/vedana_e3.jpg","img/vedana_e4.jpg","img/vedana_e5.jpg","img/vedana_e6.jpg"],
+  miron:["img/miron.jpg","img/miron_e2.jpg","img/miron_e3.jpg","img/miron_e4.jpg","img/miron_e5.jpg","img/miron_e6.jpg"], gost:["img/gost.jpg","img/gost_e2.jpg","img/gost_e3.jpg","img/gost_e4.jpg","img/gost_e5.jpg","img/gost_e6.jpg"] };
 function portrait(k){ const p=PORTRAITS[k]; if(!p||!ADVISORS[k]||!isHouse(k)) return ADVISORS[k]?.img; return p[Math.min(S.eraIdx,p.length-1)]; }
 
 // Роды советников: в каждой эпохе новый человек того же рода. Прозвище предка становится фамилией.
