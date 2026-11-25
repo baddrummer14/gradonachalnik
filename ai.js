@@ -52,7 +52,7 @@ ${ev.guest?`Это визит исторической личности: ${ev.gu
   // Сырой запрос к прокси: вернёт объект из JSON или null.
   async raw(prompt){
     const txt=await this.post(prompt); if(!txt) return null;
-    try{ const m=txt.match(/{[sS]*}/); return m?JSON.parse(m[0]):null; }catch(e){ return null; }
+    try{ const m=txt.match(/\{[\s\S]*\}/); return m?JSON.parse(m[0]):null; }catch(e){ return null; }
   },
 
   popLine(state){ return state.pop ? `Состав людей: мужчин ${state.pop.men}, женщин ${state.pop.women}, стариков ${state.pop.elders}, детей ${state.pop.kids}. Учитывай, кто реально может исполнить решение (охота и стража — мужчины, дети не работают в полную силу).` : ""; },
