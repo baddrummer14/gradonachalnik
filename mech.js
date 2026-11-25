@@ -106,3 +106,9 @@ function lineageHtml(){ const L=S.lineage||{}; const keys=Object.keys(L); if(!ke
   return `<div class="lineage"><h3>Древо твоего совета</h3>${keys.map(k=>`<div class="lrow">${ERAS.map((e,i)=>{ const p=L[k][i];
     return p?`<div class="lcell ${p.gone?"gone":""}" title="${esc(p.n)}${p.gone?" — прогнан":""}"><div class="lpic" style="background-image:url(${p.img})"></div><small>${esc(p.n)}</small></div>`:`<div class="lcell empty"></div>`; }).join("")}</div>`).join("")}</div>`; }
 const _nationHtml=nationHtml; nationHtml=function(){ return _nationHtml()+lineageHtml(); };
+
+// портрет исторического гостя в его событии
+const _showEventG=showEvent; showEvent=function(kind,aud){ const r=_showEventG(kind,aud);
+  if(S.cur?.guest && S.cur.id){ const id=S.cur.id.replace(/^g_/,""); $("audPic")?.remove(); const im=document.createElement("div"); im.id="audPic"; im.className="guestPic";
+    im.style.backgroundImage=`url(img/guest_${id}.jpg)`; im.innerHTML=`<span>${S.cur.guest}</span>`; $("scene").appendChild(im); }
+  return r; };

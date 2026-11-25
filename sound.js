@@ -23,3 +23,13 @@ const sb=document.createElement("button"); sb.id="sndBtn"; sb.title="Звук в
 sb.style.cssText="position:fixed;right:10px;bottom:10px;z-index:9999;width:40px;height:40px;border-radius:50%;border:0;background:#000a;color:#fff;font-size:18px;cursor:pointer";
 sb.onclick=()=>SND.toggle(); document.body.appendChild(sb);
 const _exile=exile; exile=function(k,b){ SND.play("exile",0.6); return _exile(k,b); };
+
+// эффекты на события игры (файлы snd/*.mp3; если файла нет — просто тишина)
+const _markMs=markMs; markMs=async function(id){ const had=S.ms[id]; const r=await _markMs(id); if(!had&&S.ms[id]) SND.play("milestone",0.7); return r; };
+const _glow=glowScene; glowScene=function(k){ SND.play(k==="good"?"good":"bad",0.5); return _glow(k); };
+const _build=build; build=function(id){ const n=S.built.length; const r=_build(id); if(S.built.length>n) SND.play("build",0.6); return r; };
+const _joins=showJoins; showJoins=function(j){ if(j?.length) SND.play("join",0.6); return _joins(j); };
+const _fight=fight; fight=function(res){ SND.play("war",0.7); return _fight(res); };
+const _newLaw=newLaw; newLaw=async function(){ const n=S.laws.length; const r=await _newLaw(); if(S.laws.length>n) SND.play("law",0.7); return r; };
+const _checkDeathS=checkDeath; checkDeath=function(){ const d=_checkDeathS(); if(d){ SND.play("lose",0.7); SND.music.pause(); } return d; };
+const _showEventS=showEvent; showEvent=function(kind,aud){ const r=_showEventS(kind,aud); if(S.cur?.guest) SND.play("guest",0.7); return r; };
