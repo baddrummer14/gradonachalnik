@@ -152,7 +152,7 @@ ${a.name} карьерист и просит частной аудиенции: 
       const s=words.filter(w=>ct.includes(w.slice(0,5))).length;
       if(s>score){score=s;best=c;}
     }
-    if(best) return {fx:{...best.fx}, rel:{...(best.rel||{})}, flag:best.flag, later:best.later,
+    if(best) return {fx:{...best.fx}, rel:{...(best.rel||{})}, flag:best.flag, later:best.later, ms:best.ms, msIf:best.msIf, trait:best.trait, set:best.set, out:best.out, unlockGuard:best.unlockGuard,
       lines:[{who:ev.who,text:"Понял тебя, вождь. Сделаем так."}],
       narration:"Племя исполнило волю вождя.", mem:best.mem, source:"offline"};
     return {fx:{trust:-1}, rel:{}, lines:[{who:ev.who,text:"Не очень понял, вождь. Сделали как смогли, люди в недоумении."}],
