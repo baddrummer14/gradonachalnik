@@ -71,7 +71,7 @@ button:hover{background:#5d4932} button:disabled{opacity:.5;cursor:wait}
 #builds{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
 .bld{display:flex;justify-content:space-between;align-items:center;gap:6px;background:var(--card);border-radius:6px;padding:4px 8px;font-size:14px}
 .bld small{display:block;color:var(--muted);font-size:11px} .bld button{padding:4px 8px;font-size:13px;white-space:nowrap}
-.bld button::after{content:" зап."} .bld.has{border-left:3px solid var(--green)} .bld.has b{color:var(--green)} .bld.old{color:var(--muted);font-size:12px}
+.bld button::after{content:" зап."} body:not([data-era="hunters"]):not([data-era="neolithic"]) .bld button::after{content:" казны"} .bld button.nz::after{content:""} .bld.has{border-left:3px solid var(--green)} .bld.has b{color:var(--green)} .bld.old{color:var(--muted);font-size:12px}
 /* картинка сцены — полосой сверху, карточка под ней */
 #scene{min-height:0;background:var(--card)}
 #bg{position:relative;inset:auto;height:230px;opacity:1;border-bottom:1px solid #5a4835}

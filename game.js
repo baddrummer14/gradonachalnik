@@ -7,6 +7,7 @@ const S = { stats:{}, rel:{}, jobs:{}, flags:{}, memory:[], pending:[], eraIdx:0
   queue:[], cur:null, busy:false, audNext:null, audTurn:0, tutorial:true, laws:[], lawCd:0, evNext:null, built:[] };
 const BASE_ADVISORS=JSON.parse(JSON.stringify(ADVISORS));
 
+const isFem = k => { const a=ADVISORS[k]; return !!a && (HOUSE_NAMES.vedana.includes(a.name) || a.res==="lyubava"); };
 function aiState(){ return {stats:S.stats, rel:S.rel, memory:S.memory, laws:S.laws, pop:S.pop, eraName:ERAS[S.eraIdx].name}; }
 
 function newGame(silent){
@@ -15,6 +16,8 @@ function newGame(silent){
   S.pop={men:5,women:5,elders:3,kids:5}; S.acc={food:0,goods:0};
   S.jobs={hunt:5,gather:10,craft:0,trade:0,guard:0};
   S.ms={}; S.traits={war:0,trade:0,law:0,faith:0,nomad:false}; S.open={jobs:["hunt","gather"],laws:false,builds:false};
+  // новая партия: ничего из прошлой (банк, налог, караван, поход, древо совета) не переносится
+  S.tax=0; S.bank=null; S.caravan=null; S.infl=0; S.away=null; S.lineage={}; S.lineageX=[]; S.asked=[]; S.usedAud=[]; S.talkCd=0; S.gone={}; S.eco=null;
   S.flags={}; S.memory=[]; S.pending=[]; S.eraIdx=0; S.audNext=null; S.laws=[]; S.lawCd=0; S.evNext=null; S.evReady=null; S.tutorial=true; S.built=[];
   for(const k in ADVISORS) delete ADVISORS[k];
   ADVISORS.hort={...BASE_ADVISORS.hort, banter:BANTER.hort};
@@ -39,8 +42,8 @@ async function showJoins(joins){
   for(const k of joins){
     ADVISORS[k]={...BASE_ADVISORS[k], banter:BANTER[k]}; S.rel[k]=0; houseRename();
     await new Promise(res=>{ overlay(`<div class="join"><div class="jpic" style="background-image:url(${ADVISORS[k].img})"></div>
-      <h2>В совет ${k==="vedana"?"пришла":"пришёл"} ${ADVISORS[k].name}</h2><p class="rl">${ADVISORS[k].role}</p><p>«${JOIN[k].why}»</p>
-      <p class="perk up">Пока доволен: ${SLOTS[k].good}</p><p class="perk down">Если обидеть: ${SLOTS[k].bad}</p>
+      <h2>В совет ${isFem(k)?"пришла":"пришёл"} ${ADVISORS[k].name}</h2><p class="rl">${ADVISORS[k].role}</p><p>«${JOIN[k].why}»</p>
+      <p class="perk up">Пока ${isFem(k)?"довольна":"доволен"}: ${SLOTS[k].good}</p><p class="perk down">Если обидеть: ${SLOTS[k].bad}</p>
       <button id="joinOk">Принять в совет</button></div>`); $("joinOk").onclick=()=>{ closeOv(); res(); }; });
   }
   render();
@@ -60,6 +63,10 @@ async function markMs(id){
 }
 function startEra(){
   const era=ERAS[S.eraIdx]; applyLabels(); S.evReady=null; S.evNext=null; S.audNext=null;
+  // счёт ходов в эпохе начинается заново: переносим всё, что было привязано к номеру хода
+  S.talkCd=0; (S.pending||[]).forEach((p,i)=>p.at=1+i);
+  if(S.away){ S.pop.men+=S.away.men; S.away=null; }
+  if(S.caravan) S.caravan.back=1;
   document.body.dataset.era=era.id;
   const bg=$("bg"); bg.innerHTML="";
   if(era.video && !matchMedia("(prefers-reduced-motion: reduce)").matches){ const v=document.createElement("video"); v.src=era.video; v.muted=true; v.loop=true; v.autoplay=true; v.playsInline=true; v.setAttribute("playsinline",""); v.poster=era.bg; bg.appendChild(v); v.play().catch(()=>{}); }
@@ -84,7 +91,7 @@ function dropOne(){ for(let i=S.queue.length-1;i>=0;i--) if(!S.queue[i].ms && !S
 function returnAway(){
   if(!S.away||S.turn<S.away.back) return;
   const lost=Math.random()<0.3?1:0, a=S.away; S.away=null; S.pop.men+=a.men-lost;
-  const ch=change(a.ret||{}); if(lost){ S.stats.people=Math.max(0,S.stats.people-1); }
+  const ch=change(a.ret||{}); S.stats.people=Math.min(100,Object.values(S.pop).reduce((x,y)=>x+y,0));
   S.eco=(S.eco?S.eco+" · ":"")+`Вернулись из похода (${a.what}): ${ch.map(([k,v])=>STATS[k].name+" "+sign(v)).join(", ")||"с пустыми руками"}${lost?", один не вернулся":""}.`;
 }
 function nextTurn(){
@@ -339,13 +346,14 @@ function nextEra(ok){
 async function newLaw(){
   const text=$("lawText").value.trim(); if(!text||S.busy||S.lawCd>0||S.laws.length>=4) return;
   setBusy(true); $("lawText").value=""; say("you","Объявляю закон: "+text);
-  line("banter","Советники собираются у костра, люди слушают…");
+  line("banter",S.eraIdx<2?"Советники собираются у костра, люди слушают…":"Совет собрался, глашатай читает закон на площади…");
   const r=await AI.law(aiState(), text);
-  if(!r){ line("fx","Ветер унёс слова вождя: закон не услышали. Попробуй позже."); setBusy(false); return; }
+  if(!r){ line("fx","Закон не услышали: глашатай охрип. Попробуй ещё раз."); setBusy(false); return; }
   r.lines.forEach(l=>say(l.who,l.text));
   if(!r.accepted){ if(r.narration) line("nar",r.narration); setBusy(false); return; }
-  S.laws.push({name:r.name,text}); S.lawCd=3; S.traits.law++; S.memory.push(`ход ${S.turn}: издал закон «${r.name}»`);
+  S.laws.push({name:r.name,text,kind:r.kind}); S.lawCd=3; S.traits.law++; S.memory.push(`ход ${S.turn}: издал закон «${r.name}»`);
   if(r.narration) line("nar",r.narration);
+  if(typeof lawEffect==="function" && lawEffect({kind:r.kind})) line("fx","Закон действует, пока не отменишь: "+lawEffect({kind:r.kind})+".");
   const ch=change(r.fx); for(const k in r.rel) S.rel[k]=Math.max(-5,Math.min(5,S.rel[k]+r.rel[k]));
   fxLine(ch); render(ch); if(checkDeath()) return;
   if(ERAS[S.eraIdx].milestones.some(m=>m[0]==="law")) await markMs("law");
@@ -453,9 +461,9 @@ function render(ch=[]){
   const era=ERAS[S.eraIdx];
   $("goal").innerHTML=era.milestones.map(m=>`<span class="ms ${S.ms[m[0]]?"done":""}" title="${m[2]}">${S.ms[m[0]]?"★":"☆"} ${m[1]}</span>`).join("")+` <span class="left">ходов: ${S.queue.length}</span>`;
   $("council").innerHTML=(Object.keys(ADVISORS).length?"":'<div class="law empty">Советников нет. Ты решаешь один.</div>')+Object.entries(ADVISORS).map(([k,a])=>{
-    const r=S.rel[k], m=r>=3?"предан":r>=1?"доволен":r>=-1?"спокоен":r>-4?"недоволен":"враждебен";
+    const r=S.rel[k], f=isFem(k), m=r>=3?(f?"предана":"предан"):r>=1?(f?"довольна":"доволен"):r>=-1?(f?"спокойна":"спокоен"):r>-4?(f?"недовольна":"недоволен"):(f?"враждебна":"враждебен");
     return `<div class="adv c-${k} ${S.cur?.who===k?"talk":""}" data-k="${k}"><div class="pic"${portrait(k)?` style="background-image:url(${portrait(k)})"`:""}>${portrait(k)?"":a.ch}</div>
-      <div><div class="nm">${a.name}</div><div class="rl">${a.role}</div><div class="mood ${r<0?"down":"up"}">${m} (${sign(r)})</div><div class="perk ${r<=-3?"down":r>=0?"up":""}">${r<=-3?"вредит: "+SLOTS[k].bad:r>=0?"даёт: "+SLOTS[k].good:"обижен, пользы нет"}</div></div><button class="talk" title="Позвать на разговор: вернуть расположение" onclick="talkTo('${k}')">💬</button><button class="exile" title="Прогнать из совета" onclick="askExile('${k}')">✕</button></div>`;
+      <div><div class="nm">${a.name}</div><div class="rl">${a.role}</div><div class="mood ${r<0?"down":"up"}">${m} (${sign(r)})</div><div class="perk ${r<=-3?"down":r>=0?"up":""}">${r<=-3?"вредит: "+SLOTS[k].bad:r>=0?"даёт: "+SLOTS[k].good:(f?"обижена":"обижен")+", пользы нет"}</div></div><button class="talk" title="Позвать на разговор: вернуть расположение" onclick="talkTo('${k}')">💬</button><button class="exile" title="Прогнать из совета" onclick="askExile('${k}')">✕</button></div>`;
   }).join("");
   const asg=assign();
   $("units").textContent="";
@@ -463,7 +471,7 @@ function render(ch=[]){
   $("jobs").innerHTML=Object.entries(JOBS).filter(([k])=>S.open.jobs.includes(k)).map(([k,j])=>
     `<div class="job" data-k="${k}"><span>${j.name}<small>${j.tip}</small></span><span></span>
       <button onclick="setJob('${k}',-1)">−</button><span class="n">${S.jobs[k]}</span><button onclick="setJob('${k}',1)">+</button></div>`).join("");
-  $("laws").innerHTML = S.laws.map((l,i)=>`<div class="law" title="${esc(l.text)}"><span>§ ${esc(l.name)}</span><button onclick="repeal(${i})" title="Отменить (Доверие −2)">×</button></div>`).join("") || '<div class="law empty">Законов пока нет</div>';
+  $("laws").innerHTML = S.laws.map((l,i)=>`<div class="law" title="${esc(l.text)}"><span>§ ${esc(l.name)}${typeof lawEffect==="function"&&lawEffect(l)?`<small style="display:block;opacity:.75">${lawEffect(l)}</small>`:""}</span><button onclick="repeal(${i})" title="Отменить (Доверие −2)">×</button></div>`).join("") || '<div class="law empty">Законов пока нет</div>';
   const can=S.lawCd<=0&&S.laws.length<4;
   $("lawText").disabled=!can||S.busy; $("lawBtn").disabled=!can||S.busy;
   $("lawText").placeholder = S.laws.length>=4 ? "Не больше 4 законов" : S.lawCd>0 ? `Новый закон через ${S.lawCd} х.` : "«десятая часть добычи — в общий запас»";
