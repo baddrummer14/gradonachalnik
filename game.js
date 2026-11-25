@@ -196,7 +196,7 @@ async function apply(res){
   let msId=res.ms; if(!msId && res.msIf && S.cur?.check) { /* проверим после применения */ }
   if(res.out) guestOutcome(res.out);
   if(res.fight) fight(res);
-  if(res.unlockGuard){ const u=unlockByKey("ms:thief"); if(u.news.length) line("fx","Открыто: "+u.news.join(", ")+". Раз воруют, нужна стража: поставь мужчин сторожить запасы."); }
+  if(res.unlockGuard){ const u=unlockByKey("ms:thief"); if(u.news.length) line("fx","Открыто: "+u.news.join(", ")+". Запасы надо стеречь: поставь мужчин в дозор."); }
   if(res.away && S.pop.men>res.away.men){ S.pop.men-=res.away.men; S.away={men:res.away.men, back:S.turn+res.away.turns, ret:res.away.ret, what:res.away.what};
     while(!assign().ok){ const k=Object.keys(S.jobs).sort((a,b)=>S.jobs[b]-S.jobs[a])[0]; if(!S.jobs[k]) break; S.jobs[k]--; }
     line("fx",`${res.away.men} мужчин ушли (${res.away.what}). Вернутся через ${res.away.turns} хода. Пока их рук нет на охоте.`); }
