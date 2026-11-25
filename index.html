@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Градоначальникъ</title>
-<link rel="stylesheet" href="style.css?v=20">
+<link rel="stylesheet" href="style.css?v=21">
 </head>
 <body>
 <div id="app">
@@ -21,13 +21,13 @@
         <h2 id="evTitle"></h2>
         <p id="evText"></p>
         <div id="log"></div>
-        <div id="choices"></div>
         <form id="own">
           <input id="ownText" maxlength="200" autocomplete="off"
             placeholder="Своё решение: «поднять плату вдвое», «простить в обмен на службу»…">
           <button>Решить</button>
         </form>
-        <div id="hint">✦ Советники поймут любое решение своими словами. Невозможное вернут обратно.</div>
+        <div id="hint">✦ Своё решение — главное. Или выбери один из вариантов:</div>
+        <div id="choices"></div>
         <button id="nextBtn" class="hidden">Следующий ход →</button>
       </div>
     </section>
@@ -55,11 +55,11 @@
   </main>
 </div>
 <div id="overlay" class="hidden"><div id="ovBox"></div></div>
-<script src="data.js?v=20"></script>
-<script src="eras.js?v=20"></script>
-<script src="history.js?v=20"></script>
-<script src="eras2.js?v=20"></script>
-<script src="ai.js?v=20"></script>
-<script src="game.js?v=20"></script>
+<script src="data.js?v=21"></script>
+<script src="eras.js?v=21"></script>
+<script src="history.js?v=21"></script>
+<script src="eras2.js?v=21"></script>
+<script src="ai.js?v=21"></script>
+<script src="game.js?v=21"></script>
 </body>
 </html>

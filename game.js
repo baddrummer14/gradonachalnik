@@ -66,6 +66,7 @@ function startEra(){
   S.turn=0; S.queue=era.events.slice(0,era.turns); S.audTurn=3+Math.floor(Math.random()*2);
   $("era").textContent=era.name;
   if(era.bg) $("bg").style.backgroundImage=`url(${era.bg})`;
+  if(S.eraIdx>=1 && !S.open.jobs.includes("guard")) S.open.jobs.push("guard");
   const u=unlockByKey("era:"+S.eraIdx);
   overlay(`<h2>${era.name}</h2><p>${era.intro}</p>
     <p><b>Вехи эпохи</b> (нужно пройти хотя бы две):</p><ol class="mslist">${era.milestones.map(m=>`<li>${m[1]}</li>`).join("")}</ol>
@@ -77,7 +78,14 @@ function startEra(){
 
 // ---------- ход ----------
 function dropOne(){ for(let i=S.queue.length-1;i>=0;i--) if(!S.queue[i].ms && !S.queue[i].guest){ S.queue.splice(i,1); return; } }
+function returnAway(){
+  if(!S.away||S.turn<S.away.back) return;
+  const lost=Math.random()<0.3?1:0, a=S.away; S.away=null; S.pop.men+=a.men-lost;
+  const ch=change(a.ret||{}); if(lost){ S.stats.people=Math.max(0,S.stats.people-1); }
+  S.eco=(S.eco?S.eco+" · ":"")+`Вернулись из похода (${a.what}): ${ch.map(([k,v])=>STATS[k].name+" "+sign(v)).join(", ")||"с пустыми руками"}${lost?", один не вернулся":""}.`;
+}
 function nextTurn(){
+  $("audPic")?.remove(); returnAway();
   $("log").innerHTML=""; $("nextBtn").classList.add("hidden");
   const due=S.pending.findIndex(p=>p.at<=S.turn);
   let kind="Событие";
@@ -100,13 +108,14 @@ function prepareAudience(){
   const ks=Object.keys(ADVISORS); if(!ks.length) return;
   // чаще приходит тот, у кого сильнее чувства к вождю (в любую сторону)
   const who=ks.sort((a,b)=>Math.abs(S.rel[b])-Math.abs(S.rel[a])+Math.random()*3-1.5)[0];
-  S.audNext=AI.audience(aiState(), who);
+  S.audNext=AI.audience({...aiState(), asked:(S.asked||[]).slice(-6)}, who);
 }
 
 async function showAudience(){
   setBusy(true);
   const aud=await S.audNext; S.audNext=null; S.audTurn=S.turn+4+Math.floor(Math.random()*2);
   if(!aud||!ADVISORS[aud.who]) return nextTurn();
+  S.asked=[...(S.asked||[]), ADVISORS[aud.who].name+' — '+aud.title]; S.usedAud=[...(S.usedAud||[]), aud.who];
   S.turn++; dropOne();
   S.cur={...aud, who:aud.who};
   showEvent("Частная аудиенция · "+ADVISORS[aud.who].name, true);
@@ -117,6 +126,7 @@ function showEvent(kind, aud=false){
   $("turnInfo").textContent=`· ход ${S.turn}`;
   $("evKind").textContent=kind; $("evKind").className=aud?"aud":S.cur.guest?"guest":S.cur.ms?"msk":"";
   $("eventCard").className=aud?"aud":S.cur.guest?"guest":"";
+  $("audPic")?.remove(); if(aud&&ADVISORS[S.cur.who]){ const im=document.createElement("div"); im.id="audPic"; im.style.backgroundImage=`url(${portrait(S.cur.who)})`; im.innerHTML=`<span>${ADVISORS[S.cur.who].name}</span>`; $("scene").appendChild(im); }
   if(aud||S.cur.guest) toast(aud?`<b>${ADVISORS[S.cur.who]?.name||"Советник"}</b> просит говорить наедине`:`<b>Историческое событие</b><br>${S.cur.guest}`, aud?"aud":"guest");
   $("law-hint")?.remove(); if(S.cur.lawMs) line("tip","Открыта панель «Законы» справа. Напиши там закон своими словами и нажми «Издать».");
   $("evTitle").textContent=S.cur.title;
@@ -140,7 +150,7 @@ function tutorial(){
     2:"Хорт: Справа — наши люди. Мужчины ходят на охоту, женщины, старики и дети собирают коренья. Переставляй их кнопками − и +. Внизу видно, сколько еды прибавится за ход.",
     3:"Хорт: Еда — главное. Если она кончится, племя разбредётся. Копи к зиме."
   };
-  if(tips[S.turn]) line("tip", tips[S.turn]);
+  if(tips[S.turn]){ const [who,txt]=tips[S.turn].split(/:\s(.+)/); const k=Object.keys(ADVISORS).find(x=>ADVISORS[x].name===who); if(k) say(k,txt,"tip"); else line("tip",tips[S.turn]); }
   if(S.turn>=3) S.tutorial=false;
 }
 
@@ -186,6 +196,10 @@ async function apply(res){
   let msId=res.ms; if(!msId && res.msIf && S.cur?.check) { /* проверим после применения */ }
   if(res.out) guestOutcome(res.out);
   if(res.fight) fight(res);
+  if(res.unlockGuard){ const u=unlockByKey("ms:thief"); if(u.news.length) line("fx","Открыто: "+u.news.join(", ")+". Раз воруют, нужна стража: поставь мужчин сторожить запасы."); }
+  if(res.away && S.pop.men>res.away.men){ S.pop.men-=res.away.men; S.away={men:res.away.men, back:S.turn+res.away.turns, ret:res.away.ret, what:res.away.what};
+    while(!assign().ok){ const k=Object.keys(S.jobs).sort((a,b)=>S.jobs[b]-S.jobs[a])[0]; if(!S.jobs[k]) break; S.jobs[k]--; }
+    line("fx",`${res.away.men} мужчин ушли (${res.away.what}). Вернутся через ${res.away.turns} хода. Пока их рук нет на охоте.`); }
   if(res.later) S.pending.push({id:res.later, at:S.turn+2+Math.floor(Math.random()*2)});
   if(res.mem) S.memory.push(`ход ${S.turn}: ${res.mem}`);
   if(res.narration) line("nar", res.narration);
@@ -240,7 +254,7 @@ function economy(){
       if(sl==="hort"&&Math.random()<0.6){ fx.goods-=3; fx.trust-=1; notes.push(ADVISORS[sl].name+" распустил стражу, воруют"); } } }
   const foes=Object.keys(ADVISORS).filter(k=>S.rel[k]<=-4);
   if(foes.length>=2){ fx.trust-=6; notes.push("заговор: "+foes.map(k=>ADVISORS[k].name).join(" и ")+" подбивают людей против тебя"); }
-  if(S.jobs.guard < Math.floor(s.people/10) && !S.built.some(b=>b.theft) && Math.random()<0.5){ fx.goods-=3; fx.trust-=2; notes.push("стражи мало, растащили запасы"); }
+  if(S.open.jobs.includes("guard") && S.jobs.guard < Math.floor(s.people/10) && !S.built.some(b=>b.theft) && Math.random()<0.5){ fx.goods-=3; fx.trust-=2; notes.push("стражи мало, растащили запасы"); }
   if(s.food>70 && s.goods<15 && S.open.jobs.length>2) notes.push("еды вдоволь, а запасов мало: переставь людей на ремесло или обмен");
   if(s.food<20) notes.push("еды мало: больше людей на охоту и сбор");
   if(S.flags.tribute){ fx.goods-=2; notes.push("дань старшему −2"); }
@@ -277,7 +291,7 @@ function change(fx){ const ch=[];
 function fxLine(ch){ if(ch.length) line("fx", ch.map(([k,v])=>`<span class="${v>0?"up":"down"}">${STATS[k].name} ${sign(v)}</span>`).join(" · "), true); }
 
 async function chronicleHtml(ending){
-  const box=`<div id="chron"><i>Летописец пишет…</i></div>`;
+  const box=`<details class="chronbox"><summary>📜 Летопись правления</summary><div id="chron"><i>Летописец пишет…</i></div></details>`;
   setTimeout(async()=>{ const c=await AI.chronicle(aiState(), ending); const el=$("chron"); if(!el) return;
     el.innerHTML = c ? `<h3>${esc(c.nickname?"Вождь "+c.nickname:"Летопись")}</h3><p class="chron">${esc(c.text)}</p>`
       : `<h3>Летопись</h3><ul>${S.memory.map(m=>`<li>${esc(m)}</li>`).join("")}</ul>`; },50);
@@ -300,7 +314,10 @@ async function endEra(){
   const ok=era.goal.check(S.stats);
   const last=S.eraIdx===ERAS.length-1;
   const ch=await chronicleHtml(`конец эпохи «${era.name}», цель ${ok?"выполнена":"провалена"}`);
-  overlay(`<h2>Итог: ${era.name}</h2><p>${era.outro.text||era.outro}</p>
+  const done=era.milestones.filter(m=>S.ms[m[0]]), miss=era.milestones.filter(m=>!S.ms[m[0]]);
+  overlay(`<div class="erapic" style="background-image:url(${era.bg})"></div><h2>Итог: ${era.name}</h2>
+    <ul class="msres">${done.map(m=>`<li class="ok">★ ${m[1]} — <i>${m[2]}</i></li>`).join("")}${miss.map(m=>`<li class="no">☆ ${m[1]} — не пройдена</li>`).join("")}</ul>
+    <p>${era.outro.text||era.outro}</p>
     <p><b>Цель эпохи ${ok?"выполнена":"не выполнена"}.</b> ${ok?era.goal.win:era.goal.lose}</p>
     ${ch}
     ${last?`${nationHtml()}<p>Сыграй ещё: выбери другой путь, и народ станет другим.</p><button onclick="closeOv();titleScreen()">Новая партия</button>`
@@ -404,12 +421,12 @@ function flash(k){ const el=document.querySelector('.job[data-k="'+k+'"]'); if(e
 function render(ch=[]){
   const d=Object.fromEntries(ch);
   $("stats").innerHTML=Object.entries(STATS).map(([k,s])=>{ const v=S.stats[k];
-    return `<div class="stat ${v<25?"low":""}" title="${s.tip}"><div class="row"><span>${s.name}</span><span><b>${v}</b>${d[k]?`<span class="d ${d[k]>0?"up":"down"}">${sign(d[k])}</span>`:""}</span></div><div class="bar"><i style="width:${v}%"></i></div></div>`;}).join("");
+    return `<div class="stat ${(k==="people"?false:k==="goods"&&S.eraIdx<3?v<5:v<25)?"low":""}" title="${s.tip}"><div class="row"><span>${s.name}</span><span><b>${v}</b>${d[k]?`<span class="d ${d[k]>0?"up":"down"}">${sign(d[k])}</span>`:""}</span></div><div class="bar"><i style="width:${v}%"></i></div></div>`;}).join("");
   const era=ERAS[S.eraIdx];
   $("goal").innerHTML=era.milestones.map(m=>`<span class="ms ${S.ms[m[0]]?"done":""}" title="${m[2]}">${S.ms[m[0]]?"★":"☆"} ${m[1]}</span>`).join("")+` <span class="left">ходов: ${S.queue.length}</span>`;
   $("council").innerHTML=(Object.keys(ADVISORS).length?"":'<div class="law empty">Советников нет. Ты решаешь один.</div>')+Object.entries(ADVISORS).map(([k,a])=>{
     const r=S.rel[k], m=r>=3?"предан":r>=1?"доволен":r>=-1?"спокоен":r>-4?"недоволен":"враждебен";
-    return `<div class="adv ${S.cur?.who===k?"talk":""}"><div class="pic"${portrait(k)?` style="background-image:url(${portrait(k)})"`:""}>${portrait(k)?"":a.ch}</div>
+    return `<div class="adv c-${k} ${S.cur?.who===k?"talk":""}" data-k="${k}"><div class="pic"${portrait(k)?` style="background-image:url(${portrait(k)})"`:""}>${portrait(k)?"":a.ch}</div>
       <div><div class="nm">${a.name}</div><div class="rl">${a.role}</div><div class="mood ${r<0?"down":"up"}">${m} (${sign(r)})</div><div class="perk ${r<=-3?"down":r>=0?"up":""}">${r<=-3?"вредит: "+SLOTS[k].bad:r>=0?"даёт: "+SLOTS[k].good:"обижен, пользы нет"}</div></div><button class="exile" title="Прогнать из совета" onclick="askExile('${k}')">✕</button></div>`;
   }).join("");
   const asg=assign();
@@ -427,12 +444,14 @@ function render(ch=[]){
     return `<div class="bld ${has?"has":""}"><span>${b.name}<small>${b.tip}</small></span>${has?"<b>✓</b>":`<button onclick="build('${b.id}')" ${S.stats.goods<=b.cost?"disabled":""}>${b.cost}</button>`}</div>`;}).join("")
     + (S.built.filter(b=>!BUILDINGS[S.eraIdx].includes(b)).length?`<div class="bld old">Прежние: ${S.built.filter(b=>!BUILDINGS[S.eraIdx].includes(b)).map(b=>b.name).join(", ")}</div>`:"");
   const f=forecast();
-  $("forecast").innerHTML=`За ход: еда <b class="${f.food<0?"down":"up"}">${sign(f.food)}</b>, запасы <b class="up">${sign(f.goods)}</b>${S.jobs.guard>=Math.floor(S.stats.people/10)||S.built.some(b=>b.theft)?"":' · <span class="down">стражи мало, будут воровать</span>'}`;
+  $("forecast").innerHTML=`За ход: еда <b class="${f.food<0?"down":"up"}">${sign(f.food)}</b>, запасы <b class="up">${sign(f.goods)}</b>${!S.open.jobs.includes("guard")||S.jobs.guard>=Math.floor(S.stats.people/10)||S.built.some(b=>b.theft)?"":' · <span class="down">стражи мало, будут воровать</span>'}${S.away?.men?` · <span>в походе: ${S.away.men} муж.</span>`:""}<br><small>Люди прибавляются, когда еды больше 60 и довольство выше 55. Убывают от голода, войн и бед.</small>`;
 }
 
 function say(who,text,cls=""){
-  const n = who==="you" ? ERA_LABELS[S.eraIdx].leader : ADVISORS[who]?.name || "Голос из толпы";
-  line("say "+(who==="you"?"you ":"")+cls, `<b>${n}:</b> ${esc(text)}`, true);
+  if(who==="you"){ line("say you "+cls, `<b>${ERA_LABELS[S.eraIdx].leader}:</b> ${esc(text)}`, true); return; }
+  const a=ADVISORS[who], n=a?.name||"Голос из толпы", p=a?portrait(who):"";
+  line("say "+cls+" c-"+who, `${p?`<span class="mini" style="background-image:url(${p})"></span>`:""}<span><b>${n}:</b> ${esc(text)}</span>`, true);
+  const card=document.querySelector(`.adv[data-k="${who}"]`); if(card){ card.classList.remove("speak"); void card.offsetWidth; card.classList.add("speak"); }
 }
 function line(cls, html, raw){
   const el=document.createElement("div"); el.className="line "+cls;
@@ -446,29 +465,27 @@ function closeOv(){ $("overlay").classList.add("hidden"); }
 
 // ---------- титульный экран и экскурсия ----------
 function titleScreen(){
-  overlay(`<div class="title-screen"><h1>Градоначальникъ</h1>
-  <div class="sub">Правь от племени у реки до первого банка и узнай, откуда взялись деньги.</div>
-  <p>Ты вождь сорока человек. Денег ещё не придумали: есть мясо, шкуры и память о том, кто кому должен. За пять эпох твоё племя может стать городом с монетой, налогами и банком, или развалиться от голода, бунта и жадных советников.</p>
-  <p><b>Что ты делаешь:</b></p>
-  <ol>
-   <li><b>Решаешь, что делать с событием.</b> Можно нажать вариант советника или написать своё решение словами. ИИ поймёт и рассудит честно.</li>
-   <li><b>Раскидываешь людей по делам:</b> кто охотится, кто ремесленничает, кто сторожит. Это кормит племя каждый ход.</li>
-   <li><b>Издаёшь законы</b> и слушаешь советников. Каждый из них тянет одеяло на себя.</li>
-  </ol>
-  <p><b>Цель:</b> пройти эпохи, не дав ни одному показателю упасть до нуля, и выполнить цель каждой эпохи. В конце летописец опишет твоё правление и даст тебе прозвище.</p>
-  <button onclick="closeOv();startTour()">Показать, как играть</button> <button onclick="closeOv();newGame()">Я разберусь сам</button></div>`);
+  overlay(`<div class="title-screen"><div class="crest">✦</div><h1>Градоначальникъ</h1>
+  <div class="sub">Проведи свой народ от костра у реки до великой державы. Двенадцать тысяч лет истории — твоими решениями.</div>
+  <p>У тебя восемнадцать человек, огонь и добыча. Впереди приручение зверя, первые города, законы, монета, торговые пути и банки. Каждая эпоха ставит перед тобой те же задачи, что стояли перед настоящими правителями.</p>
+  <ul class="how">
+   <li><b>Решай.</b> Выбери вариант или напиши своё решение словами — советники поймут и ответят.</li>
+   <li><b>Распоряжайся людьми.</b> Кто охотится, кто собирает, кто сторожит — от этого зависит, будет ли сыт народ.</li>
+   <li><b>Проходи вехи.</b> Каждая открывает новое: советников, работы, законы, постройки.</li>
+  </ul>
+  <p class="end">В конце ты узнаешь, на какой народ истории похож твой.</p>
+  <div class="btns"><button class="main" onclick="closeOv();startTour()">Показать, как играть</button><button onclick="closeOv();newGame()">Сразу в игру</button></div></div>`);
 }
 
 const TOUR=[
-  ["#stats","Чем живёт племя","Пять показателей. Если любой упадёт до нуля, правление окончено. Красная рамка значит опасно. Наведи мышь на показатель, чтобы узнать подробнее."],
-  ["#goal","Цель эпохи","Её нужно выполнить к последнему ходу. Выполнишь, и следующая эпоха начнётся с бонусом. Здесь же видно, сколько ходов осталось."],
-  ["#eventCard","Событие хода","Каждый ход что-то случается: охота, долг, вор, чужаки. Ниже варианты советников."],
-  ["#own","Твоё решение","Главное в игре. Не нравятся варианты? Напиши своё, например «простить вора, если отработает неделю у кузнеца». ИИ рассудит, что из этого выйдет."],
-  ["#council","Совет","Четыре советника со своими интересами. Они помнят твои решения, обижаются и иногда сами просят тайной встречи, чтобы протолкнуть свою идею."],
-  ["#laws","Законы","Постоянные правила, которые ты пишешь сам. ИИ учитывает их во всех следующих событиях. Новый закон можно издать раз в три хода."],
-  ["#builds","Постройки","Строятся за запасы и приносят пользу каждый ход до конца игры. В каждой эпохе свои. Все сразу не потянешь, выбирай."],
-  [".peoplebox","Люди по делам","Люди разные: на охоту и в стражу идут только мужчины, ремеслу лучше всех учат старики, дети помогают собирать. Раскидай их по делам кнопками − и +. Под списком прогноз еды и запасов за ход. Между эпохами дети взрослеют, а взрослые стареют."],
+  ["#stats","Чем живёт племя","Еда, запасы, довольство, доверие к тебе и число людей. Если любой показатель упадёт до нуля, правление окончено. Наведи на показатель, чтобы узнать подробнее."],
+  ["#goal","Вехи эпохи","Три главных дела эпохи. Пройдёшь веху — она загорится, и откроется что-то новое. Нужно пройти хотя бы две."],
+  ["#eventCard","Событие хода","Здесь каждый ход что-то случается. Читай, что произошло, и решай. Ниже появятся ответы советников и последствия."],
+  ["#own","Твоё решение","Главное в игре. Напиши, как поступить, своими словами — например «пусть вор отработает неделю у костра». Или выбери один из вариантов ниже."],
+  ["#council","Совет","Пока здесь один советник. Другие придут, когда ты пройдёшь вехи. Каждый даёт пользу, пока доволен, и вредит, если обидеть."],
+  [".peoplebox","Люди по делам","Мужчины охотятся, женщины, старики и дети собирают коренья и ягоды. Переставляй людей кнопками − и +. Внизу видно, сколько еды прибавится за ход."],
 ];
+
 let tourI=0;
 function startTour(){ newGame(true); tourI=0; tourStep(); }
 function tourStep(){

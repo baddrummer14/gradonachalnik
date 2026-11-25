@@ -1,6 +1,6 @@
 // ИИ-судья. Запрос идёт на наш прокси (ключ живёт только там).
 // Если прокси не задан или не ответил, работает запасной разбор без ИИ.
-const BASE_NAMES={hort:"Хорт",vedana:"Ведана",miron:"Мирон",gost:"Гостомысл"};
+const BASE_NAMES={hort:"Хорт",vedana:"Ведана",miron:"Бажен",gost:"Гостомысл"};
 const AI = {
   // Два прокси: Cloudflare и Vercel. Пробуем по очереди, запоминаем тот, что ответил.
   PROXIES: ["https://functions.yandexcloud.net/d4e0d2fkg4fnfc4dstv3", "https://gradonachalnik.vercel.app/api/judge", "https://gradonachalnik.baddrummer14.workers.dev"],
@@ -123,10 +123,11 @@ ${this.popLine(state)}`; },
 Что вождь делал раньше: ${state.memory.slice(-6).join("; ")||"ничего"}.
 ${a.name} карьерист и просит частной аудиенции: предлагает вождю конкретную идею, выгодную прежде всего себе (власть, доля, право решать), но с пользой и для племени. Идея по эпохе (без денег и металла, если их ещё нет), может опираться на прошлые решения вождя. Если отношение плохое, может намекнуть на угрозу.
 Ответь ТОЛЬКО JSON: {"title":"короткий заголовок","text":"прямая речь советника 2-3 предложения, живо, без пафоса",
+Он уже просил раньше: ${(state.asked||[]).join("; ")||"ничего"}. Не повторяй прошлые просьбы.
 "choices":[{"t":"согласиться (суть)","fx":{"food":0,"goods":0,"mood":0,"trust":0,"people":0},"rel":{"${who}":2},"mem":"до 8 слов"},
-{"t":"отказать","fx":{...},"rel":{"${who}":-1},"mem":"..."}, {"t":"третий вариант-компромисс","fx":{...},"rel":{...},"mem":"..."}]}
-Эффекты от -8 до +8, сумма плюсов у согласия не больше +10: выгода всегда с ценой (что-то падает).`);
-    if(!j||!j.title||!Array.isArray(j.choices)||!j.choices.length){ if(!AUDIENCES[who]||BASE_NAMES[who]!==a.name) return null; return {...AUDIENCES[who], who, source:"offline"}; }
+{"t":"компромисс: часть того, что он просит","fx":{...},"rel":{"${who}":1},"mem":"..."}, {"t":"вежливо отказать","fx":{все нули},"rel":{"${who}":-1},"mem":"..."}]}
+Ровно три варианта в этом порядке. Согласие: выгода с ценой, эффекты от -8 до +8. Компромисс: эффекты слабее (от -4 до +4), советник доволен (+1). Отказ: показатели не меняются вовсе, только отношение советника −1.`);
+    if(!j||!j.title||!Array.isArray(j.choices)||!j.choices.length){ if(!AUDIENCES[who]||BASE_NAMES[who]!==a.name||(state.asked||[]).some(x=>x.includes(AUDIENCES[who].title))) return null; return {...AUDIENCES[who], who, source:"offline"}; }
     const clamp=v=>Math.max(-10,Math.min(10,Math.round(+v||0)));
     return {who, title:String(j.title).slice(0,60), text:String(j.text||"").slice(0,400), source:"ai",
       choices:j.choices.slice(0,3).map(c=>({t:String(c.t).slice(0,90), mem:String(c.mem||c.t).slice(0,80),
