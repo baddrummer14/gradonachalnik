@@ -51,7 +51,7 @@ economy=function(){
 const _showEventB=showEvent;
 showEvent=function(kind,aud){
   if(S.cur && S.cur.title==="Нашествие" && !S.cur._pw){ S.cur._pw=1; const ep=enemyPower();
-    S.cur.text+=` Твоя сила ${fightPower()}: стражник за двоих, стена 4, каждый третий мужчина. У врага от ${ep} до ${ep+5}. Если враг вдвое сильнее, бой кончится твоим свержением.`;
+    S.cur.text+=` Твоя сила ${fightPower()}: воин за троих, стражник за двоих, стена 4, каждый третий мужчина. У врага от ${ep} до ${ep+5}. Если враг вдвое сильнее, бой кончится твоим свержением.`;
     S.cur.choices=S.cur.choices.map(c=>c.fight?c:{...c, fx:c.fx&&c.fx.goods?{...c.fx, goods:-Math.max(14,Math.round(S.stats.goods*0.45)), trust:-5}:c.fx}); }
   const r=_showEventB(kind,aud);
   if(S.cur?.title){ S.seen=S.seen||[]; if(!S.seen.includes(S.cur.title)) S.seen.push(S.cur.title); }

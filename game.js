@@ -25,7 +25,7 @@ function newGame(silent){
   for(const k in STATS) S.stats[k]=STATS[k].start;
   S.stats.food=32; S.stats.goods=10; S.stats.people=18;
   S.pop={men:5,women:5,elders:3,kids:5}; S.acc={food:0,goods:0};
-  S.jobs={hunt:5,gather:10,craft:0,trade:0,guard:0};
+  S.jobs={hunt:5,gather:10,craft:0,trade:0,guard:0,army:0}; S.blockade=0; S.plotEra=-1; S.grudgeEra=-1; S.mentorAt="";
   S.ms={}; S.traits={war:0,trade:0,law:0,faith:0,nomad:false}; S.open={jobs:["hunt","gather"],laws:false,builds:false};
   // новая партия: ничего из прошлой (банк, налог, караван, поход, древо совета) не переносится
   S.tax=0; S.bank=null; S.caravan=null; S.infl=0; S.away=null; S.lineage={}; S.lineageX=[]; S.asked=[]; S.usedAud=[]; S.talkCd=0; S.gone={}; S.eco=null;
@@ -39,7 +39,7 @@ function newGame(silent){
 
 function applyLabels(){
   const L=ERA_LABELS[S.eraIdx]; STATS.goods.name=L.goods;
-  for(const k in JOBS){ JOBS[k].name=L.jobs[k]; JOBS[k].tip0=JOBS[k].tip0||JOBS[k].tip; JOBS[k].tip=JOBS[k].tip0.split("запасов").join(S.eraIdx>=2?"казны":"запасов"); }
+  for(const k in JOBS){ JOBS[k].name=L.jobs[k]||JOBS[k].name; JOBS[k].tip0=JOBS[k].tip0||JOBS[k].tip; JOBS[k].tip=JOBS[k].tip0.split("запасов").join(S.eraIdx>=2?"казны":"запасов"); }
   if(S.traits?.nomad && S.eraIdx>=1){ JOBS.hunt.name="Стада"; JOBS.gather.name="Кочевые промыслы"; }
 }
 function unlockByKey(key){
@@ -250,7 +250,7 @@ $("nextBtn").onclick=()=>{
 function assign(){
   const p={...S.pop}, j=S.jobs, a={}; let ok=true;
   const take=(job,groups,n)=>{ a[job]=a[job]||{}; for(const gr of groups){ const t=Math.min(n,p[gr]); if(t>0){ a[job][gr]=(a[job][gr]||0)+t; p[gr]-=t; n-=t; } } if(n>0) ok=false; };
-  take("hunt",["men"],j.hunt); take("guard",["men"],j.guard);
+  take("hunt",["men"],j.hunt); take("guard",["men"],j.guard); take("army",["men"],j.army||0);
   take("craft",["elders","women"],j.craft); take("gather",["kids","elders","women"],j.gather);
   take("trade",["women","men"],j.trade);
   return {a, ok, free:p};
@@ -275,7 +275,7 @@ function economy(){
       if(sl==="miron"){ fx.goods-=3; notes.push(ADVISORS[sl].name+" утаил запасы"); }
       if(sl==="hort"&&Math.random()<0.6){ fx.goods-=3; fx.trust-=1; notes.push(ADVISORS[sl].name+" распустил стражу, воруют"); } } }
   const foes=Object.keys(ADVISORS).filter(k=>S.rel[k]<=-4);
-  if(foes.length>=2){ fx.trust-=6; notes.push("заговор: "+foes.map(k=>ADVISORS[k].name).join(" и ")+" подбивают людей против тебя"); }
+  if(foes.length>=2){ fx.trust-=4; notes.push("заговор: "+foes.map(k=>ADVISORS[k].name).join(" и ")+" подбивают людей против тебя"); }
   if(S.open.jobs.includes("guard") && S.jobs.guard < Math.floor(s.people/10) && !S.built.some(b=>b.theft) && !S.laws.some(l=>l.kind==="court") && Math.random()<0.5){ fx.goods-=3; fx.trust-=2; notes.push("стражи мало, растащили запасы"); }
   if(s.food>70 && s.goods<15 && S.open.jobs.length>2) notes.push("еды вдоволь, а запасов мало: переставь людей на ремесло или обмен");
   if(s.food<20) notes.push("еды мало: больше людей на охоту и сбор");
@@ -391,7 +391,7 @@ function guestOutcome(out){
   } else if(out==="tribute"){ S.flags.tribute=true; line("fx","Ты признал старшего. Дань теперь будет уходить каждый ход."); }
   else if(out==="trade"||out==="alliance"){ S.traits.trade++; S.built.push({id:"pact_"+S.turn,name:"Союз: "+g,eff:{goods:1}}); line("fx","Союз заключён: +1 к запасам каждый ход."); }
 }
-function fightPower(){ return Math.floor(S.pop.men/3)+S.jobs.guard*2+(S.built.some(b=>b.theft)?4:0); }
+function fightPower(){ return Math.floor(S.pop.men/3)+S.jobs.guard*2+(S.jobs.army||0)*3+(S.built.some(b=>b.theft)?4:0); }
 function enemyPower(){ return 4+S.eraIdx*2+Math.round(S.stats.people*0.1); }
 function fight(res){
   const power=fightPower();

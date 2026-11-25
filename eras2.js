@@ -72,8 +72,8 @@ const NEW = {
  ms_temple:{id:"ms_temple", ms:"temple", title:"Храм-хранилище", who:"vedana",
   text:"Ведана предлагает построить храм. Люди будут сдавать туда зерно на хранение, а храм — давать его в долг весной.",
   hist:"Храмы Шумера были первыми «банками»: хранили зерно и серебро, давали в долг под рост. Процент по зерну доходил до трети в год.",
-  choices:[{t:"Строить храм-хранилище",fx:{goods:-6,trust:+4,mood:+2},rel:{vedana:+2},mem:"построил храм-хранилище",ms:"temple",trait:"faith"},
-           {t:"Храм без хранилища",fx:{goods:-3,mood:+3},rel:{vedana:+1},mem:"построил храм без хранилища",trait:"faith"},
+  choices:[{t:"Храм с житницей: хранит зерно и даёт в долг",fx:{goods:-6,trust:+4,mood:+2},rel:{vedana:+2},mem:"построил храм-хранилище",ms:"temple",trait:"faith"},
+           {t:"Храм только для молитв: дешевле",fx:{goods:-3,mood:+3},rel:{vedana:+1},mem:"построил храм без хранилища",trait:"faith"},
            {t:"Не до храмов",fx:{},rel:{vedana:-2},mem:"отказался строить храм"}]},
 
  ms_tax:{id:"ms_tax", ms:"tax", title:"Чем содержать войско?", who:"hort",
@@ -274,7 +274,7 @@ const NATIONS = [
 
 // Портреты рода по эпохам: берём последний доступный не позже текущей эпохи
 const PORTRAITS = { hort:["img/hort.jpg","img/hort_e2.jpg","img/hort_e3.jpg","img/hort_e4.jpg","img/hort_e5.jpg","img/hort_e6.jpg"], vedana:["img/vedana.jpg","img/vedana_e2.jpg","img/vedana_e3.jpg","img/vedana_e4.jpg","img/vedana_e5.jpg","img/vedana_e6.jpg"],
-  miron:["img/miron.jpg","img/miron_e2.jpg","img/miron_e3.jpg","img/miron_e4.jpg","img/miron_e5.jpg","img/miron_e6.jpg"], gost:["img/gost.jpg","img/gost_e2.jpg","img/gost_e3.jpg","img/gost_e4.jpg","img/gost_e5.jpg","img/gost_e6.jpg"] };
+  miron:["img/miron.jpg?2","img/miron_e2.jpg?2","img/miron_e3.jpg?2","img/miron_e4.jpg?2","img/miron_e5.jpg?2","img/miron_e6.jpg?2"], gost:["img/gost.jpg","img/gost_e2.jpg","img/gost_e3.jpg","img/gost_e4.jpg?2","img/gost_e5.jpg","img/gost_e6.jpg"] };
 function portrait(k){ const p=PORTRAITS[k]; if(!p||!ADVISORS[k]||!isHouse(k)) return ADVISORS[k]?.img; return p[Math.min(S.eraIdx,p.length-1)]; }
 
 // Роды советников: в каждой эпохе новый человек того же рода. Прозвище предка становится фамилией.
