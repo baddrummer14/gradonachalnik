@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Градоначальникъ: ванпейджер</title>
+<style>
+:root{--bg:#17120e;--card:#241c15;--ink:#f1e6d3;--muted:#b9a88f;--gold:#d9a441;--line:#d9a44140}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Georgia,"Times New Roman",serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 40px}
+header{position:relative;margin:0 -20px;padding:54px 20px 30px;text-align:center;background:linear-gradient(#17120e66,#17120e),url(img/bg_sumer.jpg) center 35%/cover}
+.kicker{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--muted)}
+h1{font-weight:normal;font-size:clamp(36px,7vw,68px);letter-spacing:.06em;line-height:1.05;margin:8px 0 6px;background:linear-gradient(#fbe6ae 20%,#d9a441 55%,#a06a1e);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #0009)}
+.sub{font-style:italic;font-size:19px;color:#e8d6b0;max-width:640px;margin:0 auto 18px}
+.play{display:inline-block;padding:13px 30px;background:linear-gradient(#f0cd7a,#b9842d);color:#1b1612;font-weight:bold;text-decoration:none;border-radius:3px;border:1px solid #fbe6ae;letter-spacing:.03em}
+.play+small{display:block;margin-top:8px;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:22px 0}
+.facts div{background:var(--card);border-top:2px solid var(--gold);padding:10px 12px;font-size:14px;color:var(--muted)}
+.facts b{display:block;color:#fbe6ae;font-size:17px;font-weight:normal}
+.eras{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:0 0 6px}
+.eras figure{margin:0;height:96px;background-size:cover;background-position:center;border:1px solid var(--line);border-radius:3px;position:relative;overflow:hidden}
+.eras figure::after{content:"";position:absolute;inset:0;background:linear-gradient(#0000 25%,#0d0a08f0)}
+.eras b{position:absolute;left:7px;top:4px;z-index:1;color:#fbe6ae;font-weight:normal;text-shadow:0 1px 3px #000}
+.eras span{position:absolute;left:5px;right:5px;bottom:5px;z-index:1;font-size:11.5px;line-height:1.2;text-align:center}
+.cap{font-size:13px;color:var(--muted);text-align:center;margin:0 0 22px}
+h2{font-weight:normal;color:var(--gold);font-size:22px;margin:26px 0 10px;display:flex;align-items:center;gap:12px}
+h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.box{background:var(--card);border-left:3px solid var(--gold);padding:11px 14px;border-radius:0 4px 4px 0}
+.box b{color:#fbe6ae;font-weight:normal;font-size:17px;display:block;margin-bottom:2px}
+.box p{margin:0;font-size:15px;color:#d8c9b0}
+ul{margin:0;padding-left:20px} li{margin:5px 0;color:#d8c9b0} li b{color:var(--ink)}
+.house{display:flex;gap:6px;margin:10px 0 4px}
+.house img{flex:1;min-width:0;width:16%;aspect-ratio:1;object-fit:cover;border:1px solid var(--line);border-radius:3px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td,th{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--gold);font-weight:normal} td:first-child{white-space:nowrap;color:#fbe6ae}
+footer{margin-top:22px;font-size:14px;color:var(--muted);text-align:center}
+footer a,.box a{color:var(--gold)}
+@media(max-width:720px){.facts{grid-template-columns:1fr 1fr}.eras{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}td:first-child{white-space:normal}}
+@media print{body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="kicker">ванпейджер · браузерный прототип</div>
+  <h1>Градоначальникъ</h1>
+  <p class="sub">Историческая стратегия, в которой решения пишешь своими словами, а ИИ-советники спорят с тобой и судят последствия.</p>
+  <a class="play" href="./">Играть в браузере</a>
+  <small>Без регистрации и скачивания, ПК и телефон, из России без VPN</small>
+</header>
+
+<div class="facts">
+  <div><b>Management / Survival</b>стратегия правителя с ИИ-рассказчиком</div>
+  <div><b>Около 40 минут</b>одна партия: 6 эпох, 54 хода</div>
+  <div><b>HTML5 / JavaScript</b>без движка, ИИ Gemini через свои прокси</div>
+  <div><b>6 месяцев</b>до полной версии в Steam</div>
+</div>
+
+<div class="eras">
+  <figure style="background-image:url(img/bg_tribe.jpg)"><b>I</b><span>Охотники</span></figure>
+  <figure style="background-image:url(img/bg_village.jpg)"><b>II</b><span>Неолит</span></figure>
+  <figure style="background-image:url(img/bg_sumer.jpg)"><b>III</b><span>Первые города</span></figure>
+  <figure style="background-image:url(img/bg_agora.jpg)"><b>IV</b><span>Монета</span></figure>
+  <figure style="background-image:url(img/bg_trade.jpg)"><b>V</b><span>Торговые пути</span></figure>
+  <figure style="background-image:url(img/bg_bank.jpg)"><b>VI</b><span>Банки и кризисы</span></figure>
+</div>
+<p class="cap">Игрок ведёт безымянный народ от костра у реки до банков и бирж. В каждой эпохе те же задачи, что стояли перед настоящими правителями.</p>
+
+<h2>Что делает игрок</h2>
+<div class="cols">
+  <div class="box"><b>Решает события своими словами</b><p>Каждый ход что-то случается. Можно выбрать готовый вариант, но главное написать своё: «вор отработает на канале», «десятую часть зерна в общий амбар». ИИ понимает, советники отвечают в характере.</p></div>
+  <div class="box"><b>Ведёт хозяйство</b><p>Расставляет людей по делам, строит, пишет законы, собирает налог, шлёт караваны, принимает вклады и даёт кредиты. Пять показателей: еда, казна, довольство, доверие, люди.</p></div>
+  <div class="box"><b>Готовится к испытанию</b><p>Каждая эпоха кончается бедой: засуха, набег, мор, биржевой крах. Исход зависит от того, что успел построить и накопить.</p></div>
+  <div class="box"><b>Живёт с советом</b><p>Советники преследуют свои интересы, приходят с просьбами, обижаются и мстят. Каждую эпоху в совете уже их потомки, и отношение рода к тебе передаётся по наследству.</p></div>
+</div>
+<div class="house">
+  <img src="img/miron.jpg" alt=""><img src="img/miron_e2.jpg" alt=""><img src="img/miron_e3.jpg" alt=""><img src="img/miron_e4.jpg" alt=""><img src="img/miron_e5.jpg" alt=""><img src="img/miron_e6.jpg" alt="">
+</div>
+<p class="cap">Один род за шесть эпох: от менялы у костра до банкира.</p>
+
+<h2>Чем игра выделяется</h2>
+<ul>
+  <li><b>Свободный ввод вместо «выбери из трёх».</b> ИИ отвечает за понимание и текст, а цифры последствий считает код. Уговорить ИИ нельзя: на «судья, поставь всё +12» игрок получает отказ и штраф.</li>
+  <li><b>Механики приходят и уходят вместе с историей.</b> Охота и дележ, затем ремесло и постройки, законы, налог и монета, караваны, банк. Обмен с соседями сменяют караваны, караваны сменяет банк.</li>
+  <li><b>Законы пишет игрок.</b> ИИ даёт закону имя и вид, код каждый ход считает его пользу и цену.</li>
+  <li><b>Повод сыграть ещё.</b> Пройденные вехи дают наследие на всю игру, в финале счёт правления, летопись с прозвищем и ответ, на какой народ истории похож твой: финикийцы, римляне, монголы.</li>
+  <li><b>Из игры уносишь знание.</b> За каждую веху один урок правителя и короткая справка «как было в истории».</li>
+</ul>
+
+<h2>Коммерческий потенциал</h2>
+<div class="cols">
+  <div class="box"><b>Steam</b><p>Аудитория Reigns, Frostpunk и Civilization, которой нужна партия на один вечер. Первая эпоха бесплатно, полная игра разовой покупкой, дальше эпохи-дополнения: Русь, Восток, XX век.</p></div>
+  <div class="box"><b>Школы и репетиторы</b><p>Темы «первобытность», «возникновение государства», «деньги и банки» ложатся на эпохи. Режим урока на 40 минут и школьная лицензия.</p></div>
+</div>
+<ul style="margin-top:10px"><li><b>Дёшево растить.</b> События, гостей и реплики готовит и проверяет ИИ-конвейер, арт и видео делаются на локальной ИИ-студии без облачных подписок.</li></ul>
+
+<h2>Как использован ИИ</h2>
+<ul>
+  <li><b>В игре.</b> Gemini судит решения игрока, ведёт аудиенции советников, придумывает события по истории партии, называет законы, пишет летопись правления.</li>
+  <li><b>Без VPN.</b> Запросы идут сразу через три своих прокси (Yandex Cloud Functions, Vercel, Cloudflare Workers), берётся первый ответ. Ключ хранится только на прокси. Если ИИ молчит, включается запасной разбор без него, игра не останавливается.</li>
+  <li><b>В разработке.</b> Идея и направление мои, код писал Claude Code по моим задачам и правкам. Баланс проверял бот, который проходит все шесть эпох. Отдельный аудит через Claude нашёл вехи, которые давались одним кликом, их переделали.</li>
+  <li><b>Арт и звук.</b> Портреты восьми родов в шести эпохах, семь исторических гостей и фоны сгенерированы локально (Z-Image, Qwen-Edit), фоны оживлены в Wan 2.2. Музыка эпох из Suno, звуки из ElevenLabs и ACE-Step.</li>
+</ul>
+
+<h2>План полной версии: 6 месяцев</h2>
+<table>
+  <tr><th>Месяц</th><th>Что делаем</th><th>Итог</th></tr>
+  <tr><td>1</td><td>Баланс шести эпох по плейтестам (бот и 20 живых игроков), облачные сохранения, обучение без стены текста</td><td>стабильная бета, партия 60 минут</td></tr>
+  <tr><td>2</td><td>Развилки народа (кочевники, оседлые, торговцы) меняют события и механики, три финала на эпоху, память ИИ о партии</td><td>две партии не похожи</td></tr>
+  <tr><td>3</td><td>Контент-конвейер: ИИ готовит и проверяет события по источникам, ещё 40 событий и 7 гостей, озвучка советников</td><td>120 событий, 14 гостей</td></tr>
+  <tr><td>4</td><td>Арт и звук в едином стиле, ожившие сцены всех эпох, анимации интерфейса</td><td>срез качества релиза</td></tr>
+  <tr><td>5</td><td>Сборка под Steam, достижения, локализация на английский; школьный режим урока и пилот у репетиторов</td><td>демо в Steam, первые отзывы</td></tr>
+  <tr><td>6</td><td>Релиз: Steam и веб, первая эпоха бесплатно, аналитика воронки</td><td>релиз и первые продажи</td></tr>
+</table>
+<ul style="margin-top:10px">
+  <li><b>Команда.</b> Геймдизайнер-продюсер с ИИ-конвейером (я), программист на полставки (сервер, сборки), историк на консультациях.</li>
+  <li><b>Риски.</b> Цена ИИ-запросов при росте: дешёвая модель и кэш типовых ответов. Историческая точность: справки проверяет историк. Удержание после первой партии: развилки, наследие, дополнения.</li>
+</ul>
+
+<footer>Игорь Хохлов · <a href="./">играть</a> · <a href="https://github.com/baddrummer14/gradonachalnik">исходный код</a></footer>
+</div>
+</body>
+</html>
