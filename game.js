@@ -37,7 +37,7 @@ function unlockByKey(key){
 }
 async function showJoins(joins){
   for(const k of joins){
-    ADVISORS[k]={...BASE_ADVISORS[k], banter:BANTER[k]}; S.rel[k]=0;
+    ADVISORS[k]={...BASE_ADVISORS[k], banter:BANTER[k]}; S.rel[k]=0; houseRename();
     await new Promise(res=>{ overlay(`<div class="join"><div class="jpic" style="background-image:url(${ADVISORS[k].img})"></div>
       <h2>В совет ${k==="vedana"?"пришла":"пришёл"} ${ADVISORS[k].name}</h2><p class="rl">${ADVISORS[k].role}</p><p>«${JOIN[k].why}»</p>
       <p class="perk up">Пока доволен: ${SLOTS[k].good}</p><p class="perk down">Если обидеть: ${SLOTS[k].bad}</p>
@@ -67,10 +67,13 @@ function startEra(){
   $("era").textContent=era.name;
   if(era.bg) $("bg").style.backgroundImage=`url(${era.bg})`;
   if(S.eraIdx>=1 && !S.open.jobs.includes("guard")) S.open.jobs.push("guard");
+  const prev=Object.keys(ADVISORS).filter(isHouse).map(k=>[k,ADVISORS[k].name]); houseRename();
+  const heirs=prev.filter(([k,n])=>ADVISORS[k].name!==n).map(([k,n])=>`${n} → <b>${ADVISORS[k].name}</b>`);
   const u=unlockByKey("era:"+S.eraIdx);
   overlay(`<h2>${era.name}</h2><p>${era.intro}</p>
     <p><b>Вехи эпохи</b> (нужно пройти хотя бы две):</p><ol class="mslist">${era.milestones.map(m=>`<li>${m[1]}</li>`).join("")}</ol>
     ${u.news.length?`<p><b>Открыто:</b> ${u.news.join(", ")}</p>`:""}
+    ${heirs.length?`<p><b>Сменилось поколение.</b> В совете теперь потомки: ${heirs.join(", ")}.</p>`:""}
     <button id="eraGo">Начать</button>`);
   $("eraGo").onclick=async()=>{ closeOv(); if(u.joins.length) await showJoins(u.joins); nextTurn(); };
   render();
@@ -132,7 +135,7 @@ function showEvent(kind, aud=false){
   $("evTitle").textContent=S.cur.title;
   // кого ещё нет в совете — называем по роли, а не по имени
   const ROLE_NAME={hort:["Хорт","старший охотник"],vedana:["Ведана","старая жрица"],miron:["Бажен","торговец"],gost:["Гостомысл","старый мастер"]};
-  let evText=S.cur.text; for(const k in ROLE_NAME){ if(!ADVISORS[k]||ADVISORS[k].name!==ROLE_NAME[k][0]) evText=evText.split(ROLE_NAME[k][0]).join(ROLE_NAME[k][1]); }
+  let evText=S.cur.text; for(const k in ROLE_NAME){ evText=evText.split(ROLE_NAME[k][0]).join(isHouse(k)?ADVISORS[k].name:ROLE_NAME[k][1]); }
   $("evText").textContent=evText;
   const box=$("choices"); box.innerHTML="";
   S.cur.choices.forEach(c=>{
@@ -153,7 +156,7 @@ function tutorial(){
     2:"Хорт: Справа — наши люди. Мужчины ходят на охоту, женщины, старики и дети собирают коренья. Переставляй их кнопками − и +. Внизу видно, сколько еды прибавится за ход.",
     3:"Хорт: Еда — главное. Если она кончится, племя разбредётся. Копи к зиме."
   };
-  if(tips[S.turn]){ const [who,txt]=tips[S.turn].split(/:\s(.+)/); const k=Object.keys(ADVISORS).find(x=>ADVISORS[x].name===who); if(k) say(k,txt,"tip"); else line("tip",tips[S.turn]); }
+  if(tips[S.turn]){ const [who,txt]=tips[S.turn].split(/:\s(.+)/); const k=Object.keys(ADVISORS).find(x=>ADVISORS[x].name===who||(isHouse(x)&&HOUSE_NAMES[x][0]===who)); if(k) say(k,txt,"tip"); else line("tip",tips[S.turn]); }
   if(S.turn>=3) S.tutorial=false;
 }
 

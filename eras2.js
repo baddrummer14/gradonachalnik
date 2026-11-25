@@ -273,4 +273,20 @@ const NATIONS = [
 // Портреты рода по эпохам: берём последний доступный не позже текущей эпохи
 const PORTRAITS = { hort:["img/hort.jpg","img/hort_e2.jpg","img/hort_e3.jpg"], vedana:["img/vedana.jpg","img/vedana_e2.jpg","img/vedana_e3.jpg"],
   miron:["img/miron.jpg","img/miron_e2.jpg","img/miron_e3.jpg"], gost:["img/gost.jpg","img/gost_e2.jpg","img/gost_e3.jpg"] };
-function portrait(k){ const p=PORTRAITS[k]; if(!p||!ADVISORS[k]||BASE_ADVISORS[k]?.name!==ADVISORS[k].name) return ADVISORS[k]?.img; return p[Math.min(S.eraIdx,p.length-1)]; }
+function portrait(k){ const p=PORTRAITS[k]; if(!p||!ADVISORS[k]||!isHouse(k)) return ADVISORS[k]?.img; return p[Math.min(S.eraIdx,p.length-1)]; }
+
+// Роды советников: в каждой эпохе новый человек того же рода. Прозвище предка становится фамилией.
+const HOUSE_NAMES = {
+  hort:  ["Хорт","Ратша Зоркий","Ратибор из Зорких","Добромир Зоркич","Святополк Зоркич","полковник Зоркин"],
+  vedana:["Ведана","Лада Ведунья","Млада из Ведуний","Зоряна Веденич","мать Евпраксия Веденеева","Анна Веденеева"],
+  miron: ["Бажен","Будимир Меняла","Твердило из Менял","Нежата Менялич","Садко Менялов","Пётр Менялов"],
+  gost:  ["Гостомысл","Гостомысл","Радим из Гончаров","Яромир Гончарич","Лука Гончаров","Иван Гончаров"]
+};
+const HOUSE_ROLES = {
+  hort:  ["старший охотник","пастух и воин","начальник городской стражи","начальник ополчения","глава охраны караванов","полковник городской стражи"],
+  vedana:["жрица и хранительница обычаев","жрица плодородия","храмовая жрица","жрица богини урожая","настоятельница монастыря","попечительница богадельни"],
+  miron: ["торговец, ходит к соседям меняться","меняла зерна и соли","купец с печатью","купец на рынке","купец дальней торговли","банкир"],
+  gost:  ["старый мастер-кузнец","мастер-гончар","храмовый писец","начальник монетного двора","нотариус и счетовод","главный бухгалтер"]
+};
+const isHouse = k => HOUSE_NAMES[k] && ADVISORS[k] && HOUSE_NAMES[k].includes(ADVISORS[k].name);
+function houseRename(){ for(const k in HOUSE_NAMES) if(isHouse(k)){ ADVISORS[k].name=HOUSE_NAMES[k][S.eraIdx]; ADVISORS[k].role=HOUSE_ROLES[k][S.eraIdx]; } }
