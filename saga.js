@@ -61,14 +61,14 @@ function makeTrial(){
 }
 
 // ход-испытание: после последнего события эпохи
-const _nextTurnS=nextTurn;
+const _nextTurnSaga=nextTurn;
 nextTurn=function(){
   if(!S.queue.length && !S.trialDone){
     S.trialDone=true; $("audPic")?.remove(); returnAway(); $("log").innerHTML=""; $("nextBtn").classList.add("hidden");
     S.cur=makeTrial(); S.turn++; if(S.lawCd>0) S.lawCd--;
     showEvent("Испытание эпохи"); return;
   }
-  return _nextTurnS();
+  return _nextTurnSaga();
 };
 const _applyS=apply;
 apply=function(res){
