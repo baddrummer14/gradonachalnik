@@ -2,10 +2,10 @@
 const SND = {
   on: localStorage.getItem("grad_sound")!=="off",
   music: new Audio(), cur: -1, fx: {},
-  play(name, vol=0.6){ if(!this.on) return; const src=this.fx[name]||(this.fx[name]=new Audio("snd/"+name+".mp3?v=1"));
+  play(name, vol=0.6){ if(!this.on) return; const src=this.fx[name]||(this.fx[name]=new Audio("snd/"+name+".mp3?v=2"));
     const a=src.cloneNode(); a.volume=vol; a.play().catch(()=>{}); },
   era(i){ if(this.cur===i && !this.music.paused) return; this.cur=i; if(!this.on) return;
-    const m=this.music; m.loop=true; m.volume=0; m.src="snd/era"+(i+1)+".mp3?v=1"; m.play().catch(()=>{});
+    const m=this.music; m.loop=true; m.volume=0; m.src="snd/era"+(i+1)+".mp3?v=2"; m.play().catch(()=>{});
     let v=0; const t=setInterval(()=>{ v+=0.02; m.volume=Math.min(0.35,v); if(v>=0.35) clearInterval(t); },120); },
   toggle(){ this.on=!this.on; localStorage.setItem("grad_sound", this.on?"on":"off");
     if(this.on){ this.cur=-1; this.era(S.eraIdx); } else this.music.pause(); $("sndBtn").textContent=this.on?"🔊":"🔇"; }
