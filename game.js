@@ -67,7 +67,7 @@ function startEra(){
   $("era").textContent=era.name;
   if(era.bg) $("bg").style.backgroundImage=`url(${era.bg})`;
   if(S.eraIdx>=1 && !S.open.jobs.includes("guard")) S.open.jobs.push("guard");
-  const prev=Object.keys(ADVISORS).filter(isHouse).map(k=>[k,ADVISORS[k].name]); houseRename();
+  const prev=Object.keys(ADVISORS).filter(k=>isHouse(k)||resId(k)).map(k=>[k,ADVISORS[k].name]); houseRename();
   const heirs=prev.filter(([k,n])=>ADVISORS[k].name!==n).map(([k,n])=>`${n} → <b>${ADVISORS[k].name}</b>`);
   const u=unlockByKey("era:"+S.eraIdx);
   overlay(`<h2>${era.name}</h2><p>${era.intro}</p>
@@ -424,7 +424,7 @@ async function exile(k, byDecision){
     line("nar", Object.keys(ADVISORS).length?`Место ${old.name} опустело: желающих сидеть в твоём совете больше нет.`:"Советников больше нет. Теперь ты решаешь один.");
     render(change({mood:-4})); if(!byDecision) setBusy(false); return; }
   n.hello=n.hello||"Служу тебе. Но и о себе не забуду.";
-  ADVISORS[k]={name:n.name, role:n.role, wants:n.wants, voice:n.voice, ch:n.name[0], banter:n.banter};
+  ADVISORS[k]={name:n.name, role:n.role, wants:n.wants, voice:n.voice, ch:n.name[0], banter:n.banter, res:RES_IDS[n.name]}; houseRename();
   S.rel[k]=1; S.memory.push(`ход ${S.turn}: прогнал ${old.name}, позвал ${n.name}`);
   const ch=change({mood:-4});
   say(k, n.hello); fxLine(ch);

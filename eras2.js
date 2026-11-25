@@ -290,3 +290,23 @@ const HOUSE_ROLES = {
 };
 const isHouse = k => HOUSE_NAMES[k] && ADVISORS[k] && HOUSE_NAMES[k].includes(ADVISORS[k].name);
 function houseRename(){ for(const k in HOUSE_NAMES) if(isHouse(k)){ ADVISORS[k].name=HOUSE_NAMES[k][S.eraIdx]; ADVISORS[k].role=HOUSE_ROLES[k][S.eraIdx]; } }
+
+// Запасные роды: если прогнал советника, на его место приходит человек запасного рода — и дальше его потомки.
+const RES_IDS = {"Яробор":"yarobor","Любава":"lyubava","Ждан":"zhdan","Велимир":"velimir"};
+const RES_NAMES = {
+  yarobor:["Яробор","Яробор Рыжий","Буслай из Рыжих","Ярополк Рыжич","Ратмир Рыжов","капитан Рыжов"],
+  lyubava:["Любава","Любава Купчиха","Добрава из Купчих","Милава Купчич","Людмила Купцова","вдова Купцова"],
+  zhdan:  ["Ждан","Ждан Грамотей","Ждан из Грамотеев","Светозар Грамотич","Нечай Грамотеев","Николай Грамотеев"],
+  velimir:["Велимир","Велимир Седой","Всеволод из Седых","Всеслав Седич","Мстислав Седов","генерал Седов"]
+};
+const RES_ROLES = {
+  yarobor:["бывший разбойник, теперь десятник","набежчик, ставший стражем","наёмник","начальник наёмников","бывший рыцарь-разбойник","капитан полиции"],
+  lyubava:["вдова богатого купца","торговка солью и тканью","вдова купца","богатая вдова","купеческая вдова","вдова-пайщица"],
+  zhdan:  ["молодой грамотей","счётчик зерна","ученик писца","молодой философ","молодой писарь","реформатор-счётовод"],
+  velimir:["старый воевода","старый вождь дружины","старый военачальник","стратег","воевода","генерал"]
+};
+function resId(k){ return ADVISORS[k]?.res; }
+const _houseRename=houseRename;
+houseRename=function(){ _houseRename(); for(const k in ADVISORS){ const r=resId(k); if(r && RES_NAMES[r].includes(ADVISORS[k].name)){ ADVISORS[k].name=RES_NAMES[r][S.eraIdx]; ADVISORS[k].role=RES_ROLES[r][S.eraIdx]; } } };
+const _portrait=portrait;
+portrait=function(k){ const r=resId(k); if(r && RES_NAMES[r].includes(ADVISORS[k].name)) return `img/res_${r}_e${S.eraIdx+1}.jpg`; return _portrait(k); };
