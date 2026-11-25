@@ -203,3 +203,10 @@ details.eco[open]{font-size:13px;color:var(--muted)} details.eco[open] summary{f
 #eventCard.guest #evTitle,#eventCard.guest #evText,#eventCard.guest #evKind{padding-right:min(24%,180px)}
 #eventCard.aud #evTitle,#eventCard.aud #evText,#eventCard.aud #evKind{padding-right:0}
 @media(max-width:700px){#audPic.guestPic{width:38%;animation:none} #eventCard.guest #evTitle,#eventCard.guest #evText,#eventCard.guest #evKind{padding-right:0}}
+
+/* новое в эпохе */
+.newin{border:1px solid var(--gold);border-radius:8px;padding:10px 12px;margin:10px 0;background:#3a2e1688} .newin b{color:var(--gold);display:block;margin-bottom:4px} .newin div{margin:4px 0} .newin i{color:#fbe6ae;font-style:normal} .newin small{color:var(--muted)}
+.isnew{position:relative;outline:2px solid var(--gold);outline-offset:2px;border-radius:6px;animation:newpulse 1.8s ease-in-out infinite}
+@keyframes newpulse{50%{outline-color:#fbe6ae;box-shadow:0 0 18px #d9a44188}}
+.newtag{position:absolute;right:6px;top:-9px;background:var(--gold);color:#1b1612;font:bold 10px/1 Georgia,serif;letter-spacing:.08em;text-transform:uppercase;padding:3px 6px;border-radius:3px;z-index:2}
+#stats .stat .what{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

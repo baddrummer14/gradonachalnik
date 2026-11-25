@@ -17,7 +17,7 @@ nextEra=function(ok){ const s=S.stats;
   return _nextEraB(ok); };
 const _startEraB=startEra;
 startEra=function(){ _startEraB(); S.seen=[];
-  if(S.eraIdx>0) $("eraGo")?.insertAdjacentHTML("beforebegin",`<p><i>Прошли поколения. Запасы прежней эпохи проедены и растрачены, а доверие и довольство каждое поколение завоёвывает заново.</i></p>`);
+  if(S.eraIdx>0) $("eraGo")?.insertAdjacentHTML("beforebegin",`<p><i>Прошли поколения. Запасы прежней эпохи проедены и растрачены. Новое поколение не помнит заслуг твоего деда: доверие и довольство придётся заслужить заново.</i></p>`);
   if(S.eraIdx===1) setTimeout(()=>toast("<b>Открыто: Постройки</b><br>Панель справа. Стройка стоит запасов, за ход можно начать одну.","ms"),1800);
 };
 
@@ -32,10 +32,7 @@ const CALAMITY=[ [],
 const _economyB=economy;
 economy=function(){
   const r=_economyB(), fx=r.fx, n=r.notes, s=S.stats, e=S.eraIdx;
-  if(s.mood>60){ const d=Math.ceil((s.mood-60)/8); fx.mood-=d; n.push(`чем лучше живут, тем большего хотят: довольство −${d}`); }
-  if(s.trust>60){ const d=Math.ceil((s.trust-60)/8); fx.trust-=d; n.push(`чем больше тебе верят, тем больше от тебя ждут: доверие −${d}`); }
-  if(s.food>60){ const d=Math.ceil((s.food-60)/5); fx.food-=d; n.push(`лишняя еда портится −${d}`); }
-  if(e>=1 && s.goods>45){ const d=Math.ceil((s.goods-45)/6); fx.goods-=d; n.push(`большое добро тает: сторожа, порча, просители −${d}`); }
+  if(s.food>60){ const keep=!!S.ms.granary||!!S.ms.temple, d=Math.ceil((s.food-60)/(keep?10:5)); fx.food-=d; n.push(keep?`лишняя еда портится −${d} (амбар бережёт половину)`:`лишняя еда портится −${d}: хранить негде, нужен амбар`); }
   if(e>=1 && e<3 && s.goods>40 && S.jobs.guard<Math.ceil(s.people/8) && !S.built.some(b=>b.theft) && Math.random()<0.3){ fx.goods-=7; fx.trust-=2; n.push("разбойники прослышали о богатстве: стражи мало, унесли 7"); }
   if(e>=3 && s.goods<=0){ fx.trust-=7; fx.mood-=5; n.push("БЕДА: казна пуста, страже и писцам не плачено. Наполни её налогом, торговлей или займом"); }
   // беда: раз в несколько ходов, со второй эпохи

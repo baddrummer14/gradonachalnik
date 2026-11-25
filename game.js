@@ -517,7 +517,7 @@ function closeOv(){ $("overlay").classList.add("hidden"); $("overlay").classList
 
 // ---------- титульный экран и экскурсия ----------
 function titleScreen(){
-  overlay(`<div class="title-screen"><div class="ts-kicker">историческая стратегия с живыми советниками</div><h1>Градоначальникъ</h1>
+  overlay(`<div class="title-screen"><div class="ts-kicker">историческая стратегия с живыми советниками</div><h1>ГрадоначальникЪ</h1>
   <div class="ts-rule"><span></span><i>✦</i><span></span></div>
   <div class="sub">Проведи свой народ от костра у реки до банков и бирж. Двенадцать тысяч лет истории твоими решениями.</div>
   <div class="ts-eras">${ERAS.map(e=>{ const [num,nm]=e.name.replace(/^Эпоха\s+/,"").split(". "); return `<figure style="background-image:url(${e.bg})"><b>${num}</b><span>${nm}</span></figure>`; }).join("")}</div>
