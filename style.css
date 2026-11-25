@@ -60,7 +60,8 @@ button:hover{background:#5d4932} button:disabled{opacity:.5;cursor:wait}
 #ovBox{background:var(--card);max-width:640px;width:100%;padding:22px;border-radius:12px;border:1px solid var(--gold);max-height:90vh;overflow:auto}
 #ovBox h2{color:var(--gold);margin-top:0} #ovBox button{margin-top:10px}
 /* экскурсия по интерфейсу */
-.tour-hl{position:relative;z-index:20;box-shadow:0 0 0 4px var(--gold),0 0 0 9999px rgba(0,0,0,.78);border-radius:8px}
+.tour-hl{position:relative;z-index:20;box-shadow:0 0 0 4px var(--gold),0 0 0 9999px rgba(0,0,0,.78);border-radius:8px;animation:tourpulse 1.6s ease-in-out infinite}
+@keyframes tourpulse{50%{box-shadow:0 0 0 4px #fbe6ae,0 0 26px 6px #d9a44199,0 0 0 9999px rgba(0,0,0,.78)}}
 #tourBox{position:fixed;z-index:30;max-width:360px;background:var(--card);border:1px solid var(--gold);border-radius:10px;padding:14px 16px;box-shadow:0 8px 30px #000}
 #tourBox h4{margin:0 0 6px;color:var(--gold)} #tourBox p{margin:0 0 10px;font-size:15px}
 #tourBox .tb{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
@@ -191,3 +192,14 @@ body[data-era=bank] #eventCard::before,body[data-era=bank] #side h3::after{backg
 .title-screen .btns .main{background:linear-gradient(#f0cd7a,#b9842d);color:#1b1612;border-color:#fbe6ae;font-weight:bold;box-shadow:0 4px 18px #d9a44140}
 .title-screen .btns .main:hover{background:linear-gradient(#fbe6ae,#c9953a)}
 @media(max-width:640px){#overlay.title #ovBox{padding:22px 16px 18px} .title-screen .ts-eras{grid-template-columns:repeat(3,1fr)} .title-screen .ts-eras figure{height:64px} .title-screen .how{grid-template-columns:1fr} .title-screen .ts-kicker{letter-spacing:.18em;font-size:11px}}
+
+/* хозяйство за ход: одна строка, подробности по клику */
+details.eco summary{cursor:pointer;list-style:none} details.eco summary::-webkit-details-marker{display:none} details.eco summary i{color:var(--muted);font-size:13px}
+details.eco[open]{font-size:13px;color:var(--muted)} details.eco[open] summary{font-size:15px;color:var(--ink);margin-bottom:4px}
+.ecoloud{margin-top:4px;color:#e9b08f}
+/* портрет гостя: крупно появляется и уезжает в угол, не закрывая текст */
+#audPic.guestPic{width:min(22%,170px);right:12px;top:12px;animation:guestin 2.2s ease-in-out}
+@keyframes guestin{0%{opacity:0;transform:translate(-40%,30%) scale(2.2)}18%,62%{opacity:1;transform:translate(-40%,30%) scale(2.2)}100%{transform:none}}
+#eventCard.guest #evTitle,#eventCard.guest #evText,#eventCard.guest #evKind{padding-right:min(24%,180px)}
+#eventCard.aud #evTitle,#eventCard.aud #evText,#eventCard.aud #evKind{padding-right:0}
+@media(max-width:700px){#audPic.guestPic{width:38%;animation:none} #eventCard.guest #evTitle,#eventCard.guest #evText,#eventCard.guest #evKind{padding-right:0}}

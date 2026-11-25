@@ -20,7 +20,7 @@ const JOBS = {
   gather:{name:"Собирательство", who:["kids","elders","women"], out:{food:0.5},            tip:"дети, старики, женщины · 0,5 еды (дети 0,3)", start:14},
   craft: {name:"Ремесло",        who:["elders","women"],       out:{goods:0.3},            tip:"старики и женщины · 0,3 запасов (старики 0,4: опыт)", start:8},
   trade: {name:"Обмен с соседями",who:["women","men"],          out:{goods:0.45,food:-0.15}, tip:"женщины и мужчины · 0,45 запасов, −0,15 еды", start:2},
-  guard: {name:"Стража",         who:["men"],                  out:{},                     tip:"только мужчины · нужно 1 на 10 человек, иначе воруют", start:4}
+  guard: {name:"Стража",         who:["men"],                  out:{},                     tip:"только мужчины · нужен 1 на 10 человек, иначе воруют; в бою стражник стоит двоих", start:4}
 };
 
 const ADVISORS = {

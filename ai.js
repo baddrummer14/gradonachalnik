@@ -1,5 +1,7 @@
 // ИИ-судья. Запрос идёт на наш прокси (ключ живёт только там).
 // Если прокси не задан или не ответил, работает запасной разбор без ИИ.
+// чем дальше эпоха, тем дороже ошибка и скромнее удача: и у готовых вариантов, и у решений, которые судит ИИ
+function hardFx(v){ const e=S.eraIdx; return v>0 ? Math.round(v*(1-0.1*Math.max(0,e-1))) : Math.round(v*(1+0.22*e)); }
 const BASE_NAMES={hort:"Хорт",vedana:"Ведана",miron:"Бажен",gost:"Гостомысл"};
 const AI = {
   // Три прокси: Yandex Cloud, Vercel, Cloudflare. Спрашиваем все разом, берём первый ответ.
@@ -44,7 +46,7 @@ ${ev.guest?`Это визит исторической личности: ${ev.gu
     const one=async(url,ms)=>{ const r=await fetch(url,{method:"POST",signal:AbortSignal.timeout(ms),headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
       const j=await r.json().catch(()=>({})); if(r.ok&&j.text) return j.text; throw new Error(url+": "+r.status+" "+(j.error||"")); };
     for(let attempt=0; attempt<2; attempt++){
-      try{ return await Promise.any(this.PROXIES.map(u=>one(u, attempt?25000:15000))); }
+      try{ return await Promise.any(this.PROXIES.map(u=>one(u, attempt?14000:12000))); }
       catch(e){ this.lastError=(e.errors||[e]).map(x=>x.message||x.name).join(" | "); }
     }
     return null;
@@ -52,12 +54,14 @@ ${ev.guest?`Это визит исторической личности: ${ev.gu
 
   // Сырой запрос к прокси: вернёт объект из JSON или null.
   async raw(prompt){
-    const txt=await this.post(prompt); if(!txt) return null;
-    try{ const m=txt.match(/\{[\s\S]*\}/); return m?JSON.parse(m[0]):null; }catch(e){ return null; }
+    for(let i=0;i<2;i++){ const txt=await this.post(prompt); if(!txt) return null;
+      try{ const m=txt.match(/\{[\s\S]*\}/); if(m) return JSON.parse(m[0]); }catch(e){} }
+    return null;
   },
 
   popLine(state){ return state.pop ? `Состав людей: мужчин ${state.pop.men}, женщин ${state.pop.women}, стариков ${state.pop.elders}, детей ${state.pop.kids}. Учитывай, кто реально может исполнить решение (охота и стража — мужчины, дети не работают в полную силу).` : ""; },
-  lawsLine(state){ return `Правителя в эту эпоху называют «${ERA_LABELS[S.eraIdx].leader}»: так к нему и обращайся, даже если ниже написано «вождь».\n` + (state.laws?.length ? `Действующие законы вождя (их нарушение или исполнение должно влиять на исход): ${state.laws.map(l=>`«${l.name}: ${l.text}»`).join("; ")}.` : "Законов пока нет."); },
+  leaderLine(){ return `Правителя в эту эпоху называют «${ERA_LABELS[S.eraIdx].leader}»: обращайся к нему только так, даже если ниже написано «вождь».${S.eraIdx>=2?" Это уже город и народ: слов «вождь» и «племя» в ответе быть не должно.":""}`; },
+  lawsLine(state){ return this.leaderLine()+"\n" + (state.laws?.length ? `Действующие законы вождя (их нарушение или исполнение должно влиять на исход): ${state.laws.map(l=>`«${l.name}: ${l.text}»`).join("; ")}.` : "Законов пока нет."); },
   ctx(state){ return `Игра про историю денег. Эпоха: ${state.eraName}. Показатели (0-100): ${Object.entries(state.stats).map(([k,v])=>k+"="+v).join(", ")}.
 Советники: ${Object.entries(ADVISORS).map(([k,a])=>`${k}=${a.name} (${a.role}, отношение ${state.rel[k]})`).join("; ")}.
 Что вождь делал раньше: ${state.memory.slice(-10).join("; ")||"ничего"}.
@@ -66,7 +70,7 @@ ${this.popLine(state)}`; },
   // ИИ не рисует победу: сумма плюсов за одно решение ограничена, а к поздним эпохам удача даёт меньше, ошибка бьёт сильнее (как у готовых вариантов)
   budget(fx,cap=10,harden=false){ const pos=Object.values(fx).reduce((a,v)=>a+(v>0?v:0),0);
     if(pos>cap) for(const k in fx) if(fx[k]>0) fx[k]=Math.round(fx[k]*cap/pos);
-    const e=S.eraIdx-2; if(harden&&e>0) for(const k in fx){ const v=fx[k]; fx[k]= v>0?Math.round(v*(1-0.15*e)):Math.round(v*(1+0.2*e)); }
+    if(harden) for(const k in fx) fx[k]=hardFx(fx[k]);
     return fx; },
   capRel(rel,cap=3){ let left=cap; for(const k in rel) if(rel[k]>0){ rel[k]=Math.min(rel[k],left); left-=rel[k]; } return rel; },
   clampFx(fx,m=10){ return Object.fromEntries(Object.keys(STATS).map(k=>[k,Math.max(-m,Math.min(m,Math.round(+fx?.[k]||0)))])); },
@@ -81,10 +85,15 @@ ${this.popLine(state)}`; },
 Ответь ТОЛЬКО JSON: {"accepted":true,"kind":"court|tax|temple|trade|work","name":"короткое имя закона, 2-4 слова","fx":{"food":0,"goods":0,"mood":0,"trust":0,"people":0},"rel":{"hort":0,"vedana":0,"miron":0,"gost":0},
 "lines":[{"who":"hort|vedana|miron|gost","text":"реакция 1-2 предложения"}],"narration":"как племя приняло закон, 1 предложение"}
 fx — только первая реакция людей, от -4 до +4: постоянное действие закона посчитает игра.`);
-    if(!j) return null;
+    if(!j) return this.lawOffline(text);
     return {accepted:j.accepted!==false, kind:["court","tax","temple","trade","work"].includes(j.kind)?j.kind:"court", name:String(j.name||text).slice(0,40), fx:this.budget(this.clampFx(j.fx,4),4), rel:this.capRel(this.clampRel(j.rel),2),
       lines:(j.lines||[]).filter(l=>ADVISORS[l.who]).slice(0,2), narration:String(j.narration||"")};
   },
+
+  // ИИ не ответил: закон всё равно принимается, вид определяем по словам
+  lawOffline(text){ const t=text.toLowerCase();
+    const kind=/налог|подат|десят|пошлин|сбор|дань|часть .*(в казну|в запас|в амбар)/.test(t)?"tax":/торг|купц|мер[аы]|вес|рын|монет|цен/.test(t)?"trade":/бог|храм|обыча|праздн|вдов|сирот|бедн|милост|жертв/.test(t)?"temple":/работ|труд|пахат|строит|повинн|земл|канал/.test(t)?"work":"court";
+    return {accepted:true, kind, name:text.split(/\s+/).slice(0,4).join(" ").slice(0,40), fx:this.clampFx({},4), rel:this.clampRel({}), lines:[], narration:"Закон оглашён на площади и записан."}; },
 
   // Событие, придуманное ИИ по истории правления: последствия прошлых решений, законы, обиды советников.
   async event(state){
@@ -92,7 +101,8 @@ fx — только первая реакция людей, от -4 до +4: п�
 Придумай новое событие для этого народа. Оно должно вырасти из прошлых решений правителя, его законов или обид советников (назови это прямо), и быть про хозяйство, обмен, долги, плату или справедливость. ${S.eraIdx<3?"По эпохе: денег и металла ещё нет.":"Строго по эпохе «"+state.eraName+"»: её деньги, торговля и порядки, без анахронизмов."}
 Ответь ТОЛЬКО JSON: {"title":"2-4 слова","who":"hort|vedana|miron|gost","text":"что случилось, 2-3 предложения, живо","hist":"реальный исторический факт на эту тему, 1-2 предложения, только проверенное (народ, век, событие)",
 "choices":[{"t":"вариант","fx":{"food":0,"goods":0,"mood":0,"trust":0,"people":0},"rel":{"hort":0,"vedana":0,"miron":0,"gost":0},"mem":"до 8 слов"}, ... всего 3 варианта]}
-Эффекты от -8 до +8, у каждого варианта своя цена.`);
+Эффекты от -8 до +8, у каждого варианта своя цена: лёгкого и очевидно лучшего варианта быть не должно.
+В этой эпохе уже были или ещё будут события: ${(state.seen||[]).join("; ")||"нет"}. Не повторяй их темы: придумай другую ситуацию.`);
     if(!j||!j.title||!Array.isArray(j.choices)||j.choices.length<2) return null;
     return {title:String(j.title).slice(0,60), who:ADVISORS[j.who]?j.who:Object.keys(ADVISORS)[0], text:String(j.text||"").slice(0,400), hist:String(j.hist||"").slice(0,400), source:"ai",
       choices:j.choices.slice(0,3).map(c=>({t:String(c.t).slice(0,90), mem:String(c.mem||c.t).slice(0,80), fx:this.budget(this.clampFx(c.fx,8),8), rel:this.capRel(this.clampRel(c.rel))}))};
@@ -124,18 +134,19 @@ fx — только первая реакция людей, от -4 до +4: п�
     const j = await this.raw(`Игра про историю денег. Эпоха: ${state.eraName}. Показатели (0-100): ${Object.entries(state.stats).map(([k,v])=>k+"="+v).join(", ")}.
 Советник ${a.name}, ${a.role}. Хочет ${a.wants}. Говорит ${a.voice}. Отношение к вождю ${state.rel[who]} (от -5 до 5).
 Что вождь делал раньше: ${state.memory.slice(-6).join("; ")||"ничего"}.
+${this.leaderLine()}
 ${a.name} карьерист и просит частной аудиенции: предлагает вождю конкретную идею, выгодную прежде всего себе (власть, доля, право решать), но с пользой и для племени. Идея по эпохе (без денег и металла, если их ещё нет), может опираться на прошлые решения вождя. Если отношение плохое, может намекнуть на угрозу.
 Он уже просил раньше: ${(state.asked||[]).join("; ")||"ничего"}. Не повторяй прошлые просьбы.
 Ответь ТОЛЬКО JSON: {"title":"короткий заголовок","text":"прямая речь советника 2-3 предложения, живо, без пафоса",
 "choices":[{"t":"согласиться (суть)","fx":{"food":0,"goods":0,"mood":0,"trust":0,"people":0},"rel":{"${who}":2},"mem":"до 8 слов"},
 {"t":"компромисс: часть того, что он просит","fx":{...},"rel":{"${who}":1},"mem":"..."}, {"t":"вежливо отказать","fx":{все нули},"rel":{"${who}":-1},"mem":"..."}]}
-Ровно три варианта в этом порядке. Согласие: выгода с ценой, эффекты от -8 до +8. Компромисс: эффекты слабее (от -4 до +4), советник доволен (+1). Отказ: показатели не меняются вовсе, только отношение советника −1.`);
+Ровно три варианта в этом порядке. Согласие: выгода с ценой, эффекты от -8 до +8. Согласие обязательно бьёт по одному из показателей или по другому советнику. Компромисс: эффекты слабее (от -4 до +4), но цена тоже есть. Отказ: показатели не меняются вовсе.`);
     if(!j||!j.title||!Array.isArray(j.choices)||!j.choices.length){ if(!AUDIENCES[who]||BASE_NAMES[who]!==a.name||(state.asked||[]).some(x=>x.includes(AUDIENCES[who].title))) return null; return {...AUDIENCES[who], who, source:"offline"}; }
     const clamp=v=>Math.max(-10,Math.min(10,Math.round(+v||0)));
     return {who, title:String(j.title).slice(0,60), text:String(j.text||"").slice(0,400), source:"ai",
       choices:j.choices.slice(0,3).map(c=>({t:String(c.t).slice(0,90), mem:String(c.mem||c.t).slice(0,80),
         fx:this.budget(Object.fromEntries(Object.keys(STATS).map(k=>[k,clamp(c.fx?.[k])])),8),
-        rel:Object.fromEntries(Object.keys(ADVISORS).map(k=>[k,Math.max(-2,Math.min(2,Math.round(+c.rel?.[k]||0)))]))}))};
+        rel:Object.fromEntries(Object.keys(ADVISORS).map(k=>[k,Math.max(-2,Math.min(2,Math.round(+c.rel?.[k]||0)))]))})).map((c,i)=>{ c.rel[who]=[2,0,-2][i]??0; return c; })};
   },
 
   parse(raw){
@@ -148,7 +159,7 @@ ${a.name} карьерист и просит частной аудиенции: 
       for(const k in ADVISORS) rel[k]=Math.max(-2,Math.min(2,Math.round(+j.rel?.[k]||0)));
       const lines=(j.lines||[]).filter(l=>ADVISORS[l.who]).slice(0,3);
       this.budget(fx,10,true); this.capRel(rel);
-      return {fx, rel, lines, narration:String(j.narration||""), mem:String(j.mem||"принял своё решение").slice(0,80), removed:ADVISORS[j.removed]?j.removed:"", msOk:j.ms===true, trait:["war","trade","law","faith"].includes(j.trait)?j.trait:"", out:["war","tribute","trade","refuse"].includes(j.out)?j.out:""};
+      return {fx, rel, lines, narration:String(j.narration||""), mem:String(j.mem||"принял своё решение").slice(0,80), removed:ADVISORS[j.removed]?j.removed:"", msOk:j.ms===true, possible:j.possible!==false, trait:["war","trade","law","faith"].includes(j.trait)?j.trait:"", out:["war","tribute","trade","refuse"].includes(j.out)?j.out:""};
     }catch(e){ return null; }
   },
 
@@ -162,9 +173,9 @@ ${a.name} карьерист и просит частной аудиенции: 
       if(s>score){score=s;best=c;}
     }
     if(best) return {fx:{...best.fx}, rel:{...(best.rel||{})}, flag:best.flag, later:best.later, ms:best.ms, msIf:best.msIf, trait:best.trait, set:best.set, out:best.out, unlockGuard:best.unlockGuard,
-      lines:[{who:ev.who,text:"Понял тебя, вождь. Сделаем так."}],
-      narration:"Племя исполнило волю вождя.", mem:best.mem, source:"offline"};
-    return {fx:{trust:-1}, rel:{}, lines:[{who:ev.who,text:"Не очень понял, вождь. Сделали как смогли, люди в недоумении."}],
+      lines:[{who:ev.who,text:"Понял. Сделаем, как велено."}],
+      narration:"Гонец к судье не вернулся: совет исполнил твою волю так, как понял её сам.", mem:best.mem, source:"offline"};
+    return {fx:{trust:-1}, rel:{}, lines:[{who:ev.who,text:"Не очень понял. Сделали как смогли, люди в недоумении."}],
       narration:"Решение вышло туманным, каждый понял его по-своему.", mem:"принял туманное решение: "+text.slice(0,40), source:"offline"};
   }
 };

@@ -9,7 +9,17 @@ const BASE_ADVISORS=JSON.parse(JSON.stringify(ADVISORS));
 
 const isFem = k => { const a=ADVISORS[k]; return !!a && (HOUSE_NAMES.vedana.includes(a.name) || a.res==="lyubava"); };
 const histLabel = () => S.cur?.source==="ai" ? "📜 В истории (со слов ИИ-летописца, не проверено): " : "📜 В истории: ";
-function aiState(){ return {stats:S.stats, rel:S.rel, memory:S.memory, laws:S.laws, pop:S.pop, eraName:ERAS[S.eraIdx].name}; }
+function houseOf(k){ const a=ADVISORS[k]; if(!a||S.eraIdx<1) return ""; const g=isHouse(k)?{hort:"Хорта",vedana:"Веданы",miron:"Бажена",gost:"Гостомысла"}[k]:{yarobor:"Яробора",lyubava:"Любавы",zhdan:"Ждана",velimir:"Велимира"}[a.res]; return g?" · род "+g:""; }
+// имена в текстах событий: подставляем нынешнего советника в нужном падеже
+const NAME_STEM={hort:["Хорт",{"":"nom","а":"gen","у":"dat","ом":"ins","е":"prep"}],miron:["Бажен",{"":"nom","а":"gen","у":"dat","ом":"ins","е":"prep"}],gost:["Гостомысл",{"":"nom","а":"gen","у":"dat","ом":"ins","е":"prep"}],vedana:["Ведан",{"а":"nom","ы":"gen","е":"dat","у":"acc","ой":"ins"}]};
+function declName(name, c){ if(c==="nom") return name; const i=name.indexOf(" "), w=i<0?name:name.slice(0,i), rest=i<0?"":name.slice(i); if(/^[а-яё]/.test(w)||/ь$/.test(w)) return name; let r=w;
+  if(/[бвгджзклмнпрстфхцчшщ]$/.test(w)) r=w+{gen:"а",acc:"а",dat:"у",ins:"ом",prep:"е"}[c];
+  else if(/а$/.test(w)){ const st=w.slice(0,-1); r=st+{gen:/[гкхжчшщ]$/.test(st)?"и":"ы",dat:"е",prep:"е",acc:"у",ins:"ой"}[c]; }
+  else if(/й$/.test(w)){ r=w.slice(0,-1)+{gen:"я",acc:"я",dat:"ю",ins:"ем",prep:"е"}[c]; }
+  return r+rest; }
+function nameSub(text, roles){ for(const k in NAME_STEM){ const [stem,ends]=NAME_STEM[k]; const alt=Object.keys(ends).sort((a,b)=>b.length-a.length).join("|");
+    text=text.replace(new RegExp(stem+"("+alt+")(?![а-яё])","g"),(m,e)=>isHouse(k)?declName(ADVISORS[k].name, ends[e]):(roles?roles[k][1]:m)); } return text; }
+function aiState(){ return {seen:(S.seen||[]).slice(-14).concat(S.queue.map(e=>e.title)), stats:S.stats, rel:S.rel, memory:S.memory, laws:S.laws, pop:S.pop, eraName:ERAS[S.eraIdx].name}; }
 
 function newGame(silent){
   for(const k in STATS) S.stats[k]=STATS[k].start;
@@ -29,7 +39,7 @@ function newGame(silent){
 
 function applyLabels(){
   const L=ERA_LABELS[S.eraIdx]; STATS.goods.name=L.goods;
-  for(const k in JOBS) JOBS[k].name=L.jobs[k];
+  for(const k in JOBS){ JOBS[k].name=L.jobs[k]; JOBS[k].tip0=JOBS[k].tip0||JOBS[k].tip; JOBS[k].tip=JOBS[k].tip0.split("запасов").join(S.eraIdx>=2?"казны":"запасов"); }
   if(S.traits?.nomad && S.eraIdx>=1){ JOBS.hunt.name="Стада"; JOBS.gather.name="Кочевые промыслы"; }
 }
 function unlockByKey(key){
@@ -76,12 +86,12 @@ function startEra(){
   if(era.bg) $("bg").style.backgroundImage=`url(${era.bg})`;
   if(S.eraIdx>=1 && !S.open.jobs.includes("guard")) S.open.jobs.push("guard");
   const prev=Object.keys(ADVISORS).filter(k=>isHouse(k)||resId(k)).map(k=>[k,ADVISORS[k].name]); houseRename();
-  const heirs=prev.filter(([k,n])=>ADVISORS[k].name!==n).map(([k,n])=>{ const was=S.rel[k]; S.rel[k]=Math.trunc(was/2); return `${n} → <b>${ADVISORS[k].name}</b>${was?` (расположение рода ${was>0?"+":""}${was} → ${S.rel[k]>0?"+":""}${S.rel[k]})`:""}`; });
+  const heirs=prev.filter(([k,n])=>ADVISORS[k].name!==n).map(([k,n])=>{ const was=S.rel[k]; S.rel[k]=Math.trunc(was/2); return `<b>${ADVISORS[k].name}</b>`; });
   const u=unlockByKey("era:"+S.eraIdx);
   overlay(`<h2>${era.name}</h2><p>${era.intro}</p>
     <p><b>Вехи эпохи</b> (нужно пройти хотя бы две):</p><ol class="mslist">${era.milestones.map(m=>`<li>${m[1]}</li>`).join("")}</ol>
     ${u.news.length?`<p><b>Открыто:</b> ${u.news.join(", ")}</p>`:""}
-    ${heirs.length?`<p><b>Сменилось поколение.</b> В совете теперь потомки: ${heirs.join(", ")}. Дети помнят, как ты обходился с отцами, но наполовину: доверие придётся заслужить заново.</p>`:""}
+    ${heirs.length?`<p><b>Сменилось поколение.</b> В совете дети прежних советников: они помнят, как ты обходился с их отцами, но лишь наполовину. Теперь это ${heirs.join(", ")}.</p>`:""}
     <button id="eraGo">Начать</button>`);
   $("eraGo").onclick=async()=>{ closeOv(); if(u.joins.length) await showJoins(u.joins); nextTurn(); };
   render();
@@ -93,7 +103,7 @@ function returnAway(){
   if(!S.away||S.turn<S.away.back) return;
   const lost=Math.random()<0.3?1:0, a=S.away; S.away=null; S.pop.men+=a.men-lost;
   const ch=change(a.ret||{}); S.stats.people=Math.min(100,Object.values(S.pop).reduce((x,y)=>x+y,0));
-  S.eco=(S.eco?S.eco+" · ":"")+`Вернулись из похода (${a.what}): ${ch.map(([k,v])=>STATS[k].name+" "+sign(v)).join(", ")||"с пустыми руками"}${lost?", один не вернулся":""}.`;
+  S.eco=(S.eco||"")+`<div class="ecoloud">Вернулись из похода (${a.what}): ${ch.map(([k,v])=>STATS[k].name+" "+sign(v)).join(", ")||"с пустыми руками"}${lost?", один не вернулся":""}.</div>`;
 }
 function nextTurn(){
   $("audPic")?.remove(); returnAway();
@@ -128,12 +138,12 @@ async function showAudience(){
   if(!aud||!ADVISORS[aud.who]) return nextTurn();
   S.asked=[...(S.asked||[]), ADVISORS[aud.who].name+' — '+aud.title]; S.usedAud=[...(S.usedAud||[]), aud.who];
   S.turn++; dropOne();
-  S.cur={...aud, who:aud.who};
+  S.cur={...aud, who:aud.who, aud:true};
   showEvent("Частная аудиенция · "+ADVISORS[aud.who].name, true);
 }
 
 function showEvent(kind, aud=false){
-  if(S.eco){ line("fx", S.eco); S.eco=null; }
+  if(S.eco){ line("fx", S.eco, true); S.eco=null; }
   $("turnInfo").textContent=`· ход ${S.turn}`;
   $("evKind").textContent=kind; $("evKind").className=aud?"aud":S.cur.guest?"guest":S.cur.ms?"msk":"";
   $("eventCard").className=aud?"aud":S.cur.guest?"guest":"";
@@ -143,11 +153,11 @@ function showEvent(kind, aud=false){
   $("evTitle").textContent=S.cur.title;
   // кого ещё нет в совете — называем по роли, а не по имени
   const ROLE_NAME={hort:["Хорт","старший охотник"],vedana:["Ведана","старая жрица"],miron:["Бажен","торговец"],gost:["Гостомысл","старый мастер"]};
-  let evText=S.cur.text; for(const k in ROLE_NAME){ evText=evText.split(ROLE_NAME[k][0]).join(isHouse(k)?ADVISORS[k].name:ROLE_NAME[k][1]); }
+  let evText=nameSub(S.cur.text, ROLE_NAME);
   $("evText").textContent=evText;
   const box=$("choices"); box.innerHTML="";
   S.cur.choices.forEach(c=>{
-    const b=document.createElement("button"); b.textContent=Object.keys(ROLE_NAME).reduce((t,k)=>isHouse(k)?t.split(ROLE_NAME[k][0]).join(ADVISORS[k].name):t, c.t);
+    const b=document.createElement("button"); b.textContent=nameSub(c.t, null);
     b.onclick=()=>decide({...c, fx:{...c.fx}, rel:{...(c.rel||{})}}, c.t);
     box.appendChild(b);
   });
@@ -202,6 +212,7 @@ async function apply(res){
   if(res.trait&&S.traits[res.trait]!==undefined) S.traits[res.trait]++;
   if(res.set==="nomad"){ S.traits.nomad=true; applyLabels(); } if(res.set==="settled") S.traits.nomad=false;
   let msId=res.ms; if(!msId && res.msIf && S.cur?.check) { /* проверим после применения */ }
+  S._envoyKilled=/казн|убил|убит|обезглав|голов|повес/i.test((res.narration||"")+(res.mem||""));
   if(res.out) guestOutcome(res.out);
   if(res.fight) fight(res);
   if(res.unlockGuard){ const u=unlockByKey("ms:thief"); if(u.news.length) line("fx","Открыто: "+u.news.join(", ")+". Запасы надо стеречь: поставь мужчин в дозор."); }
@@ -228,7 +239,8 @@ $("nextBtn").onclick=()=>{
   if($("nextBtn").classList.contains("hidden")) return; $("nextBtn").classList.add("hidden");
   const e=economy(); const ch=change(e.fx);
   const notes=[...e.notes];
-  S.eco=null; if(ch.length){ S.eco=("Хозяйство за прошлый ход: "+ch.map(([k,v])=>`${STATS[k].name} ${sign(v)}`).join(" · ")+(notes.length?" — "+notes.join("; "):"")); }
+  S.eco=null; if(ch.length||notes.length){ const loud=notes.filter(n=>/^БЕДА|ПАНИКА|заговор|караван|кредит|голод|разбойник|растащили|недоимки|должник/.test(n)), quiet=notes.filter(n=>!loud.includes(n));
+    S.eco=`<details class="eco"><summary>Хозяйство за ход: ${ch.map(([k,v])=>`<span class="${v>0?"up":"down"}">${STATS[k].name} ${sign(v)}</span>`).join(" · ")||"без перемен"}${quiet.length?" <i>(почему?)</i>":""}</summary>${quiet.map(esc).join("<br>")}</details>${loud.map(n=>`<div class="ecoloud">${esc(n)}</div>`).join("")}`; }
   render(ch);
   if(checkDeath()) return;
   setTimeout(nextTurn, 700);
@@ -243,7 +255,7 @@ function assign(){
   take("trade",["women","men"],j.trade);
   return {a, ok, free:p};
 }
-function slotMult(job){ let m=1; for(const s in SLOTS){ if(!ADVISORS[s]||SLOTS[s].job!==job) continue; const r=S.rel[s]; if(r>=0) m*=SLOTS[s].mult; else if(r<=-3&&s==="gost") m*=0.5; } return m; }
+function slotMult(job){ let m=1; for(const s in SLOTS){ if(!ADVISORS[s]||SLOTS[s].job!==job) continue; const r=S.rel[s]; if(r>=0) m*=SLOTS[s].mult; else if(r<=-2&&s==="gost") m*=0.5; } return m; }
 function produce(){
   const {a}=assign(), f={food:0,goods:0};
   for(const job in a) for(const gr in a[job]){ const n=a[job][gr], o=JOBS[job].out;
@@ -259,20 +271,19 @@ function economy(){
   for(const b of S.built) for(const k in b.eff) if(k!=="food"&&k!=="goods") fx[k]+=b.eff[k];
   for(const sl in SLOTS){ if(!ADVISORS[sl]) continue; const r=S.rel[sl];
     if(r>=0&&SLOTS[sl].mood) fx.mood+=SLOTS[sl].mood;
-    if(r<=-3){ if(sl==="vedana"){ fx.mood-=2; notes.push(ADVISORS[sl].name+" мутит народ"); }
+    if(r<=-2){ if(sl==="vedana"){ fx.mood-=2; notes.push(ADVISORS[sl].name+" мутит народ"); }
       if(sl==="miron"){ fx.goods-=3; notes.push(ADVISORS[sl].name+" утаил запасы"); }
       if(sl==="hort"&&Math.random()<0.6){ fx.goods-=3; fx.trust-=1; notes.push(ADVISORS[sl].name+" распустил стражу, воруют"); } } }
   const foes=Object.keys(ADVISORS).filter(k=>S.rel[k]<=-4);
   if(foes.length>=2){ fx.trust-=6; notes.push("заговор: "+foes.map(k=>ADVISORS[k].name).join(" и ")+" подбивают людей против тебя"); }
-  if(S.open.jobs.includes("guard") && S.jobs.guard < Math.floor(s.people/10) && !S.built.some(b=>b.theft) && Math.random()<0.5){ fx.goods-=3; fx.trust-=2; notes.push("стражи мало, растащили запасы"); }
+  if(S.open.jobs.includes("guard") && S.jobs.guard < Math.floor(s.people/10) && !S.built.some(b=>b.theft) && !S.laws.some(l=>l.kind==="court") && Math.random()<0.5){ fx.goods-=3; fx.trust-=2; notes.push("стражи мало, растащили запасы"); }
   if(s.food>70 && s.goods<15 && S.open.jobs.length>2) notes.push("еды вдоволь, а запасов мало: переставь людей на ремесло или обмен");
   if(s.food<20) notes.push("еды мало: больше людей на охоту и сбор");
   if(S.flags.tribute){ fx.goods-=2; notes.push("дань старшему −2"); }
-  if(s.trust>70){ fx.trust-=1; notes.push("к хорошему привыкают: доверие тает"); }
   if(S.eraIdx>=2){ const up=Math.floor(s.people/12); fx.goods-=up; notes.push("содержание города −"+up); }
   const {free}=assign(), idle=free.men+free.women;
   if(idle>4){ fx.mood-=1; notes.push(idle+" взрослых без дела, ропщут"); }
-  if(s.food>60 && s.mood>55){ fx.people+=2; notes.push("сытно и спокойно, родились дети"); }
+  if(s.food>60 && s.mood>55){ fx.people+=1; notes.push("сытно и спокойно, родились дети"); }
   if(s.food<15){ fx.people-=2; fx.mood-=3; notes.push("голод"); }
   return {fx,notes};
 }
@@ -307,14 +318,14 @@ function fxLine(ch){ if(ch.length) line("fx", ch.map(([k,v])=>`<span class="${v>
 async function chronicleHtml(ending){
   const box=`<details class="chronbox"><summary>📜 Летопись правления</summary><div id="chron"><i>Летописец пишет…</i></div></details>`;
   setTimeout(async()=>{ const c=await AI.chronicle(aiState(), ending); const el=$("chron"); if(!el) return;
-    el.innerHTML = c ? `<h3>${esc(c.nickname?"Вождь "+c.nickname:"Летопись")}</h3><p class="chron">${esc(c.text)}</p>`
+    el.innerHTML = c ? `<h3>${esc(c.nickname?ERA_LABELS[S.eraIdx].leader+" "+c.nickname:"Летопись")}</h3><p class="chron">${esc(c.text)}</p>`
       : `<ul>${S.memory.map(m=>`<li>${esc(m)}</li>`).join("")}</ul>`; },50);
   return box;
 }
 
 function nationHtml(){ const n=NATIONS.find(x=>x.when(S.traits)); return `<div class="nation"><h3>Твой народ прошёл путь, похожий на путь ${n.name}</h3><p>${n.text}</p></div>`; }
 function checkDeath(){
-  const dead=Object.keys(S.stats).find(k=>S.stats[k]<=0 && !(k==="goods"&&S.eraIdx<3)); if(!dead) return false;
+  const dead=Object.keys(S.stats).find(k=>S.stats[k]<=0 && k!=="goods"); if(!dead) return false;
   const why={food:"Племя голодает и разбредается.",goods:"Запасы кончились, менять и платить нечем.",
     mood:"Люди восстали против вождя.",trust:"Тебе больше никто не верит. Выбрали нового вождя.",people:"Племени не стало."}[dead];
   chronicleHtml("правление окончено: "+why).then(ch=>overlay(`<h2>Правление окончено</h2><p>${why}</p>${ch}
@@ -351,7 +362,7 @@ async function newLaw(){
   const r=await AI.law(aiState(), text);
   if(!r){ line("fx","Закон не услышали: глашатай охрип. Попробуй ещё раз."); setBusy(false); return; }
   r.lines.forEach(l=>say(l.who,l.text));
-  if(!r.accepted){ if(r.narration) line("nar",r.narration); setBusy(false); return; }
+  if(!r.accepted){ if(r.narration) line("nar",r.narration); line("fx","<b>Закон не принят.</b> Совет считает его невыполнимым. Напиши иначе: что именно делать и за чей счёт.",true); setBusy(false); render(); return; }
   S.laws.push({name:r.name,text,kind:r.kind}); S.lawCd=3; S.traits.law++; S.memory.push(`ход ${S.turn}: издал закон «${r.name}»`);
   if(r.narration) line("nar",r.narration);
   if(typeof lawEffect==="function" && lawEffect({kind:r.kind})) line("fx","Закон действует, пока не отменишь: "+lawEffect({kind:r.kind})+".");
@@ -371,21 +382,25 @@ function guestOutcome(out){
     S.traits.war++;
     const id="invasion_"+S.turn;
     LATER[id]={title:"Нашествие", who:Object.keys(ADVISORS)[0], hist:S.cur?.hist,
-      text:`Войско, посланное за обиду (${g}), стоит у твоих границ. Сила решит дело: воины, стража и запасы.`,
+      text:`Войско, посланное за обиду (${g}), стоит у твоих границ. Сила решит дело.`,
       choices:[{t:"Принять бой",fight:true,mem:"принял бой с нашествием"},
                {t:"Откупиться большой данью",fx:{goods:-12,trust:-3},mem:"откупился от нашествия"},
                {t:"Уйти и переждать в лесах и степи",fx:{food:-8,people:-2,mood:-4},mem:"увёл людей от нашествия"}]};
     S.pending.push({id, at:S.turn+2});
-    line("fx","⚔ Посол уехал с угрозой. Жди войска.");
+    line("fx", S._envoyKilled?"⚔ Весть о расправе дойдёт до его господина. Жди войска.":"⚔ Посол уехал с угрозой. Жди войска.");
   } else if(out==="tribute"){ S.flags.tribute=true; line("fx","Ты признал старшего. Дань теперь будет уходить каждый ход."); }
   else if(out==="trade"||out==="alliance"){ S.traits.trade++; S.built.push({id:"pact_"+S.turn,name:"Союз: "+g,eff:{goods:1}}); line("fx","Союз заключён: +1 к запасам каждый ход."); }
 }
+function fightPower(){ return Math.floor(S.pop.men/3)+S.jobs.guard*2+(S.built.some(b=>b.theft)?4:0); }
+function enemyPower(){ return 4+S.eraIdx*2+Math.round(S.stats.people*0.1); }
 function fight(res){
-  const power=S.pop.men+S.jobs.guard*2+Math.floor(S.stats.goods/10)+(S.built.some(b=>b.theft)?4:0);
-  const enemy=8+S.eraIdx*3+Math.floor(Math.random()*8);
+  const power=fightPower();
+  const enemy=enemyPower()+Math.floor(Math.random()*6);
   const win=power>=enemy;
   res.narration=win?`Твои воины (сила ${power}) отбили врага (сила ${enemy}). О твоём народе заговорили соседи.`:`Враг (сила ${enemy}) оказался сильнее твоих воинов (сила ${power}). Земли разорены.`;
-  const ch=change(win?{trust:+6,people:-2,goods:+4}:{people:-5,goods:-10,trust:-4,mood:-5});
+  const rout=!win && power*2<=enemy;
+  if(rout) res.narration=`Враг (сила ${enemy}) смёл твоё войско (сила ${power}). Свои же обратили копья против того, кто повёл их на убой.`;
+  const ch=change(win?{trust:+4,people:-2,goods:+4}:rout?{trust:-100,people:-6,mood:-10}:{people:-5,goods:-10,trust:-6,mood:-6});
   fxLine(ch); S.traits.war++;
 }
 
@@ -407,7 +422,7 @@ function talkTo(k){
     <div class="talkopts">
      <button onclick="talkDo('${k}','gift')">Подарить лучшее из запасов (запасы −4, отношение +2)</button>
      <button onclick="talkDo('${k}','praise')">Похвалить при всех (отношение +1, но другие ревнуют)</button>
-     <button onclick="talkDo('${k}','ask')">Спросить его совета и сделать по его (отношение +1)</button>
+     <button onclick="talkDo('${k}','ask')">Спросить совета и сделать, как скажет (отношение +1, доверие −1)</button>
      <button onclick="closeOv();S.talkCd=0">Передумать</button></div></div>`);
 }
 function talkDo(k,how){
@@ -415,7 +430,7 @@ function talkDo(k,how){
   if(how==="gift"){ ch=change({goods:-4}); S.rel[k]=Math.min(5,S.rel[k]+2); S.memory.push(`ход ${S.turn}: одарил ${a.name}`); }
   if(how==="praise"){ S.rel[k]=Math.min(5,S.rel[k]+1); const o=Object.keys(ADVISORS).filter(x=>x!==k); if(o.length){ const j=o[Math.floor(Math.random()*o.length)]; S.rel[j]=Math.max(-5,S.rel[j]-1); line("fx",`${ADVISORS[j].name} ревнует: отношение −1`); } S.memory.push(`ход ${S.turn}: похвалил ${a.name} при всех`); }
   if(how==="ask"){ S.rel[k]=Math.min(5,S.rel[k]+1); ch=change({trust:-1}); S.memory.push(`ход ${S.turn}: последовал совету ${a.name}`); line("fx","Люди видят, что решает советник, а не ты: доверие −1"); }
-  say(k, {gift:"Не ожидал. Запомню.",praise:"Слышали все? То-то.",ask:"Наконец-то ты спросил того, кто знает."}[how]);
+  say(k, {gift:isFem(k)?"Не ожидала. Запомню.":"Не ожидал. Запомню.",praise:"Слышали все? То-то.",ask:isFem(k)?"Наконец-то ты спросил ту, кто знает.":"Наконец-то ты спросил того, кто знает."}[how]);
   fxLine(ch); render(ch);
 }
 
@@ -464,11 +479,11 @@ function render(ch=[]){
   $("council").innerHTML=(Object.keys(ADVISORS).length?"":'<div class="law empty">Советников нет. Ты решаешь один.</div>')+Object.entries(ADVISORS).map(([k,a])=>{
     const r=S.rel[k], f=isFem(k), m=r>=3?(f?"предана":"предан"):r>=1?(f?"довольна":"доволен"):r>=-1?(f?"спокойна":"спокоен"):r>-4?(f?"недовольна":"недоволен"):(f?"враждебна":"враждебен");
     return `<div class="adv c-${k} ${S.cur?.who===k?"talk":""}" data-k="${k}"><div class="pic"${portrait(k)?` style="background-image:url(${portrait(k)})"`:""}>${portrait(k)?"":a.ch}</div>
-      <div><div class="nm">${a.name}</div><div class="rl">${a.role}</div><div class="mood ${r<0?"down":"up"}">${m} (${sign(r)})</div><div class="perk ${r<=-3?"down":r>=0?"up":""}">${r<=-3?"вредит: "+SLOTS[k].bad:r>=0?"даёт: "+SLOTS[k].good:(f?"обижена":"обижен")+", пользы нет"}</div></div><button class="talk" title="Позвать на разговор: вернуть расположение" onclick="talkTo('${k}')">💬</button><button class="exile" title="Прогнать из совета" onclick="askExile('${k}')">✕</button></div>`;
+      <div><div class="nm">${a.name}</div><div class="rl">${a.role}${houseOf(k)}</div><div class="mood ${r<0?"down":"up"}">${m} (${sign(r)})</div><div class="perk ${r<=-2?"down":r>=0?"up":""}">${r<=-2?"вредит: "+SLOTS[k].bad:r>=0?"даёт: "+SLOTS[k].good:(f?"обижена":"обижен")+", пользы нет"}</div></div><button class="talk" title="Позвать на разговор: вернуть расположение" onclick="talkTo('${k}')">💬</button><button class="exile" title="Прогнать из совета" onclick="askExile('${k}')">✕</button></div>`;
   }).join("");
   const asg=assign();
   $("units").textContent="";
-  $("pop").innerHTML=Object.entries(GROUPS).map(([k,gr])=>'<span>'+gr.name+' <b>'+S.pop[k]+'</b>'+(k!=="kids"&&asg.free[k]?' <i>('+asg.free[k]+' своб.)</i>':'')+'</span>').join("");
+  $("pop").innerHTML=Object.entries(GROUPS).map(([k,gr])=>'<span>'+gr.name+' <b>'+S.pop[k]+'</b>'+(asg.free[k]?' <i>('+asg.free[k]+' своб.)</i>':'')+'</span>').join("");
   $("jobs").innerHTML=Object.entries(JOBS).filter(([k])=>S.open.jobs.includes(k)).map(([k,j])=>
     `<div class="job" data-k="${k}"><span>${j.name}<small>${j.tip}</small></span><span></span>
       <button onclick="setJob('${k}',-1)">−</button><span class="n">${S.jobs[k]}</span><button onclick="setJob('${k}',1)">+</button></div>`).join("");
@@ -518,9 +533,9 @@ function titleScreen(){
 }
 
 const TOUR=[
-  ["#stats","Чем живёт племя","Еда, запасы, довольство, доверие к тебе и число людей. Если еда, довольство, доверие или люди упадут до нуля, правление окончено. С эпохи монеты то же грозит и пустой казне. Наведи на показатель, чтобы узнать подробнее."],
+  ["#stats","Чем живёт племя","Еда, запасы, довольство, доверие к тебе и число людей. Если еда, довольство, доверие или люди упадут до нуля, правление окончено. Пустая казна с эпохи монеты не конец, но доверие и довольство посыплются, пока её не наполнишь. Наведи на показатель, чтобы узнать подробнее."],
   ["#goal","Вехи эпохи","Три главных дела эпохи. Пройдёшь веху — она загорится, и откроется что-то новое. Нужно пройти хотя бы две."],
-  ["#eventCard","Событие хода","Здесь каждый ход что-то случается. Читай, что произошло, и решай. Ниже появятся ответы советников и последствия."],
+  ["#scene","Событие хода","Здесь каждый ход что-то случается. Читай, что произошло, и решай. Ниже появятся ответы советников и последствия."],
   ["#own","Твоё решение","Главное в игре. Напиши, как поступить, своими словами — например «пусть вор отработает неделю у костра». Или выбери один из вариантов ниже."],
   ["#council","Совет","Пока здесь один советник. Другие придут, когда ты пройдёшь вехи. Каждый даёт пользу, пока доволен, и вредит, если обидеть."],
   [".peoplebox","Люди по делам","Мужчины охотятся, женщины, старики и дети собирают коренья и ягоды. Переставляй людей кнопками − и +. Внизу видно, сколько еды прибавится за ход."],

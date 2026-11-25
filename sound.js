@@ -1,9 +1,9 @@
 // Звук: музыка своей эпохи (Suno) и короткие эффекты. Включается после первого нажатия (так требуют браузеры).
 const SND = {
   on: localStorage.getItem("grad_sound")!=="off",
-  music: new Audio(), cur: -1, fx: {},
+  music: new Audio(), cur: -1, fx: {}, gain:{good:0.3, milestone:0.4, law:0.45, guest:0.45, war:0.45, click:0.5, pebble:0.6},
   play(name, vol=0.6){ if(!this.on) return; const src=this.fx[name]||(this.fx[name]=new Audio("snd/"+name+".mp3?v=2"));
-    const a=src.cloneNode(); a.volume=vol; a.play().catch(()=>{}); },
+    const a=src.cloneNode(); a.volume=Math.min(1,vol*(this.gain[name]||0.55)); a.play().catch(()=>{}); },
   era(i){ if(this.cur===i && !this.music.paused) return; this.cur=i; if(!this.on) return;
     const m=this.music; m.loop=true; m.volume=0; m.src="snd/era"+(i+1)+".mp3?v=2"; m.play().catch(()=>{});
     let v=0; const t=setInterval(()=>{ v+=0.02; m.volume=Math.min(0.35,v); if(v>=0.35) clearInterval(t); },120); },

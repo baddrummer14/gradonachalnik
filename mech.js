@@ -1,6 +1,6 @@
 // Механики поздних эпох: IV — налог и порча монеты, V — караваны (вместо «обмена»), VI — банк: вклады, кредит, паника.
 // Каждая открывается с объяснением и влияет на вехи эпохи.
-const TAX = [ {n:"нет",g:0,m:0}, {n:"умеренный",g:1/12,m:1}, {n:"тяжёлый",g:1/7,m:3} ];
+const TAX = [ {n:"нет",g:0,m:0}, {n:"умеренный",g:1/12,m:2}, {n:"тяжёлый",g:1/7,m:5} ];
 const ROUTES = {
   near:  {n:"К соседям",  cost:8,  men:2, tip:"надёжно: +16 казны"},
   steppe:{n:"Через степь",cost:10, men:2, tip:"+28, но без стражи (3+) могут ограбить"},
@@ -14,7 +14,7 @@ const _economy=economy;
 economy=function(){
   const r=_economy(), fx=r.fx, notes=r.notes, s=S.stats;
   if(S.eraIdx>=3 && S.tax){ const t=TAX[S.tax];
-    if(S.tax===2 && s.trust<40){ notes.push("тяжёлый налог при малом доверии: недоимки, казна не пришла"); }
+    if(S.tax===2 && s.trust<50){ notes.push("тяжёлый налог при малом доверии: недоимки, казна не пришла"); }
     else { const g=Math.floor(s.people*t.g); fx.goods+=g; notes.push(`налог ${t.n} +${g}`); }
     fx.mood-=t.m;
     if(S.eraIdx===3 && !S.ms.tax){ S.flags.taxHeld=(S.flags.taxHeld||0)+1; if(S.flags.taxHeld>=3 && s.mood>=40) setTimeout(()=>markMs("tax"),500); } }
@@ -97,14 +97,12 @@ economy=function(){
   if(e>=3){ const extra=Math.round(s.people/12*(UPKEEP_K[e]-1)); if(extra>0){ fx.goods-=extra; notes.push(`город растёт, содержание дороже −${extra}`); } }
   if(e>=3 && s.goods>50 && S.jobs.guard < Math.ceil(s.people/8) && Math.random()<0.25+0.1*(e-3)){
     const loss=6+3*(e-3); fx.goods-=loss; fx.trust-=2; notes.push(`богатый город манит разбойников: стражи мало, унесли ${loss}`); }
-  if(e>=3 && s.mood>65){ const d=e-2; fx.mood-=d; notes.push(`сытые горожане требовательнее: довольство −${d}`); }
-  if(e>=3 && s.trust>55){ const d=e-2; fx.trust-=d; notes.push(`большому городу трудно верить одному правителю: доверие −${d}`); }
   return r;
 };
 // в поздних эпохах удачные решения дают меньше, ошибки бьют сильнее
 const _decideHard=decide;
-decide=function(c,t){ const k=S.eraIdx-2;
-  if(k>0 && c && c.fx){ const fx={}; for(const key in c.fx){ const v=c.fx[key]; fx[key]= v>0 ? Math.round(v*(1-0.15*k)) : Math.round(v*(1+0.2*k)); } c={...c, fx}; }
+decide=function(c,t){
+  if(c && c.fx){ const fx={}; for(const key in c.fx) fx[key]=hardFx(c.fx[key]); c={...c, fx}; }
   return _decideHard(c,t); };
 
 // Древо родов: кто сидел в совете в каждой эпохе. Показывается в финале.
