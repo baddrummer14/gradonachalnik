@@ -68,12 +68,12 @@ function startEra(){
   if(era.bg) $("bg").style.backgroundImage=`url(${era.bg})`;
   if(S.eraIdx>=1 && !S.open.jobs.includes("guard")) S.open.jobs.push("guard");
   const prev=Object.keys(ADVISORS).filter(k=>isHouse(k)||resId(k)).map(k=>[k,ADVISORS[k].name]); houseRename();
-  const heirs=prev.filter(([k,n])=>ADVISORS[k].name!==n).map(([k,n])=>`${n} → <b>${ADVISORS[k].name}</b>`);
+  const heirs=prev.filter(([k,n])=>ADVISORS[k].name!==n).map(([k,n])=>{ const was=S.rel[k]; S.rel[k]=Math.trunc(was/2); return `${n} → <b>${ADVISORS[k].name}</b>${was?` (расположение рода ${was>0?"+":""}${was} → ${S.rel[k]>0?"+":""}${S.rel[k]})`:""}`; });
   const u=unlockByKey("era:"+S.eraIdx);
   overlay(`<h2>${era.name}</h2><p>${era.intro}</p>
     <p><b>Вехи эпохи</b> (нужно пройти хотя бы две):</p><ol class="mslist">${era.milestones.map(m=>`<li>${m[1]}</li>`).join("")}</ol>
     ${u.news.length?`<p><b>Открыто:</b> ${u.news.join(", ")}</p>`:""}
-    ${heirs.length?`<p><b>Сменилось поколение.</b> В совете теперь потомки: ${heirs.join(", ")}.</p>`:""}
+    ${heirs.length?`<p><b>Сменилось поколение.</b> В совете теперь потомки: ${heirs.join(", ")}. Дети помнят, как ты обходился с отцами, но наполовину: доверие придётся заслужить заново.</p>`:""}
     <button id="eraGo">Начать</button>`);
   $("eraGo").onclick=async()=>{ closeOv(); if(u.joins.length) await showJoins(u.joins); nextTurn(); };
   render();
@@ -217,6 +217,7 @@ async function apply(res){
 
 // конец хода: работа отрядов и расход еды
 $("nextBtn").onclick=()=>{
+  if($("nextBtn").classList.contains("hidden")) return; $("nextBtn").classList.add("hidden");
   const e=economy(); const ch=change(e.fx);
   const notes=[...e.notes];
   S.eco=null; if(ch.length){ S.eco=("Хозяйство за прошлый ход: "+ch.map(([k,v])=>`${STATS[k].name} ${sign(v)}`).join(" · ")+(notes.length?" — "+notes.join("; "):"")); }

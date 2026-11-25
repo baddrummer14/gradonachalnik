@@ -144,3 +144,6 @@ body[data-era=hunters]{--gold:#d9a441} body[data-era=neolithic]{--gold:#c98a55} 
 .adv .talk{position:absolute;top:4px;right:26px;padding:0 5px;font-size:12px;opacity:.45;background:none;border:none}
 .adv:hover .talk{opacity:1} .talkopts{display:flex;flex-direction:column;gap:6px;margin-top:10px} .talkopts button{text-align:left}
 #treasury .bld button.nz::after{content:""}
+.lineage{margin-top:12px}.lineage h3{margin:0 0 6px}.lrow{display:flex;gap:4px;margin-bottom:4px}
+.lcell{flex:1;text-align:center;min-width:0}.lcell small{display:block;font-size:10px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lpic{width:100%;aspect-ratio:1;border-radius:50%;background:#0003 center/cover}.lcell.gone .lpic{filter:grayscale(1);opacity:.5}.lcell.empty{visibility:hidden}
